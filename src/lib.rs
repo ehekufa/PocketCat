@@ -9,5 +9,7 @@ pub fn run_desktop() -> Result<(), slint::PlatformError> {
 #[no_mangle]
 pub fn android_main(app: slint::android::AndroidApp) {
     slint::android::init(app).expect("Slint Android backend initialization failed");
-    let _ = ui_app::run();
+    if let Err(error) = ui_app::run() {
+        panic!("PocketCat UI failed to start: {error}");
+    }
 }
