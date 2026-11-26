@@ -127,7 +127,8 @@ impl eframe::App for PocketCat {
     }
 }
 fn brick_card(ui:&mut egui::Ui,text:&str,color:egui::Color32,event:bool){
-    egui::Frame::default().fill(color.gamma_multiply(if event {0.3_f32}else{0.22_f32})).stroke(egui::Stroke::new(1.0,color.gamma_multiply(0.65_f32))).inner_margin(egui::Margin::symmetric(12.0_f32,9.0_f32)).show(ui,|ui|{ui.label(egui::RichText::new(text).strong().color(color));});
+    let _ = event;
+    egui::Frame::default().show(ui,|ui|{ui.label(egui::RichText::new(text).strong().color(color));});
     ui.add_space(3.0);
 }
 fn main()->eframe::Result<()> {
