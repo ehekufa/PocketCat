@@ -24,6 +24,7 @@ jobs:
           cargo test 2>&1 | tee /tmp/cargo-test.log
           result=${PIPESTATUS[0]}
           { echo '### cargo test output'; echo '```text'; tail -n 180 /tmp/cargo-test.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$result" -ne 0 ]; then echo "::error title=Rust test compiler output::$(tail -n 60 /tmp/cargo-test.log | tr '\n' ' ')"; fi
           exit "$result"
       - name: Check application
         shell: bash
