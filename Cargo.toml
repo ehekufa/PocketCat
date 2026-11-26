@@ -26,4 +26,11 @@ label = "PocketCat"
 min_sdk_version = 23
 target_sdk_version = 35
 
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
 [package.metadata.android.application]
