@@ -20,6 +20,8 @@ pub struct Sprite {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Brick {
     SetVariable { name: String, value: f64 },
+    SetX(f32),
+    SetY(f32),
     ChangeX(f32),
     ChangeY(f32),
     SetGravity(f32),
@@ -104,6 +106,8 @@ impl Scene {
     fn apply(&mut self, brick: Brick) {
         match brick {
             Brick::SetVariable { name, value } => { self.global_variables.insert(name, value); }
+            Brick::SetX(x) => { for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x = x; } }
+            Brick::SetY(y) => { for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.y = y; } }
             Brick::ChangeX(dx) => { for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x += dx; } }
             Brick::ChangeY(dy) => { for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.y += dy; } }
             Brick::SetGravity(g) => self.gravity = g,
