@@ -1,0 +1,16 @@
+[package]
+name = "pocketcat"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = { version = "0.29", default-features = false, features = ["default_fonts", "glow"] }
+
+[package.metadata.android]
+package = "dev.pocketcat.app"
+label = "PocketCat"
+
+[package.metadata.android.activity]
+main = ".MainActivity"
+
+[package.metadata.android.application]
