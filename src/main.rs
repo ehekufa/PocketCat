@@ -124,7 +124,7 @@ impl PocketCat {
         let stage_h=(ui.available_height()*0.35).clamp(160.0,260.0);
         let (rect,_)=ui.allocate_exact_size(egui::vec2(ui.available_width(),stage_h),egui::Sense::click());
         ui.painter().rect_filled(rect,0.0_f32,egui::Color32::from_rgb(242,245,244));
-        ui.painter().rect_stroke(rect,0.0_f32,egui::Stroke::new(1.0,egui::Color32::from_gray(150)));
+        ui.painter().rect_stroke(rect,0.0_f32,egui::Stroke::new(1.0_f32,egui::Color32::from_gray(150)));
         if let Some(s)=self.manager.current_scene.as_ref(){ for sp in s.sprites.iter().filter(|s|s.visible){let p=rect.center()+egui::vec2(sp.x,-sp.y);ui.painter().circle_filled(p,24.0,egui::Color32::from_rgb(164,203,79));ui.painter().text(p,egui::Align2::CENTER_CENTER,if sp.id.contains("Звезда"){"★"}else{"🐈"},egui::FontId::proportional(25.0),egui::Color32::WHITE);}}
         if let Some(scene)=self.manager.current_scene.as_ref(){ui.horizontal_wrapped(|ui|{for sp in &scene.sprites{ui.label(egui::RichText::new(format!("🐈 {}",sp.id)).color(egui::Color32::LIGHT_BLUE));}});}
         ui.separator();
@@ -139,7 +139,7 @@ impl PocketCat {
         });
     }
     fn categories(&mut self,ui:&mut egui::Ui){
-        egui::ScrollArea::vertical().show(ui,|ui|{for c in CATEGORIES{let (r,resp)=ui.allocate_exact_size(egui::vec2(ui.available_width(),72.0),egui::Sense::click());ui.painter().rect_filled(r,0.0_f32,c.color);ui.painter().line_segment([r.left_bottom(),r.right_bottom()],egui::Stroke::new(2.0,egui::Color32::from_rgb(26,31,32)));ui.painter().text(r.min+egui::vec2(24.0,36.0),egui::Align2::LEFT_CENTER,c.name,egui::FontId::proportional(23.0),egui::Color32::from_rgb(244,239,232));if resp.clicked(){self.category=c.name.into();self.page=Page::Bricks;}ui.add_space(3.0);}});
+        egui::ScrollArea::vertical().show(ui,|ui|{for c in CATEGORIES{let (r,resp)=ui.allocate_exact_size(egui::vec2(ui.available_width(),72.0),egui::Sense::click());ui.painter().rect_filled(r,0.0_f32,c.color);ui.painter().line_segment([r.left_bottom(),r.right_bottom()],egui::Stroke::new(2.0_f32,egui::Color32::from_rgb(26,31,32)));ui.painter().text(r.min+egui::vec2(24.0,36.0),egui::Align2::LEFT_CENTER,c.name,egui::FontId::proportional(23.0),egui::Color32::from_rgb(244,239,232));if resp.clicked(){self.category=c.name.into();self.page=Page::Bricks;}ui.add_space(3.0);}});
     }
     fn bricks(&mut self,ui:&mut egui::Ui){
         egui::ScrollArea::vertical().show(ui,|ui|match self.category.as_str(){
@@ -176,7 +176,7 @@ impl PocketCat {
 fn scene_preview_color(i:usize)->egui::Color32{match i%4{0=>egui::Color32::from_rgb(78,96,88),1=>egui::Color32::from_rgb(115,8,36),2=>egui::Color32::from_rgb(245,245,240),_=>egui::Color32::from_rgb(72,8,32)}}
 fn event_card(e:Event)->(&'static str,egui::Color32){(match e{Event::Start=>"При запуске сцены",Event::Resume=>"При возобновлении сцены",Event::Touch=>"При нажатии на объект",Event::Always=>"Всегда"},egui::Color32::from_rgb(204,83,21))}
 fn brick_card_info(b:&Brick)->(String,egui::Color32){match b{Brick::SetVariable{name,value}=>(format!("Задать {name} в {value}"),egui::Color32::from_rgb(220,75,78)),Brick::SetX(v)=>(format!("Установить X в {v}"),egui::Color32::from_rgb(58,137,195)),Brick::SetY(v)=>(format!("Установить Y в {v}"),egui::Color32::from_rgb(58,137,195)),Brick::ChangeX(v)=>(format!("Изменить X на {v}"),egui::Color32::from_rgb(58,137,195)),Brick::ChangeY(v)=>(format!("Изменить Y на {v}"),egui::Color32::from_rgb(58,137,195)),Brick::SetGravity(v)=>(format!("Гравитация {v}"),egui::Color32::from_rgb(58,137,195)),Brick::Bounce=>("Отскок".into(),egui::Color32::from_rgb(58,137,195)),Brick::Wait(v)=>(format!("Ждать {v} секунд"),egui::Color32::from_rgb(248,144,83)),Brick::Say(v)=>(format!("Сказать {v}"),egui::Color32::from_rgb(248,144,83))}}
-fn brick_card(ui:&mut egui::Ui,label:&str,color:egui::Color32){let (r,_)=ui.allocate_exact_size(egui::vec2(ui.available_width(),54.0),egui::Sense::hover());ui.painter().rect_filled(r,5.0_f32,color);ui.painter().rect_stroke(r,5.0_f32,egui::Stroke::new(1.0,color.gamma_multiply(0.8)));ui.painter().text(r.min+egui::vec2(48.0,27.0),egui::Align2::LEFT_CENTER,label,egui::FontId::proportional(17.0),egui::Color32::WHITE);ui.add_space(5.0);}
+fn brick_card(ui:&mut egui::Ui,label:&str,color:egui::Color32){let (r,_)=ui.allocate_exact_size(egui::vec2(ui.available_width(),54.0),egui::Sense::hover());ui.painter().rect_filled(r,5.0_f32,color);ui.painter().rect_stroke(r,5.0_f32,egui::Stroke::new(1.0_f32,color.gamma_multiply(0.8)));ui.painter().text(r.min+egui::vec2(48.0,27.0),egui::Align2::LEFT_CENTER,label,egui::FontId::proportional(17.0),egui::Color32::WHITE);ui.add_space(5.0);}
 fn brick_button(ui:&mut egui::Ui,label:&str,color:egui::Color32)->bool{let (r,response)=ui.allocate_exact_size(egui::vec2(ui.available_width(),74.0),egui::Sense::click());ui.painter().rect_filled(r,3.0_f32,color);ui.painter().line_segment([r.left_top(),r.right_top()],egui::Stroke::new(2.0,color.gamma_multiply(1.4_f32)));ui.painter().text(r.min+egui::vec2(62.0,37.0),egui::Align2::LEFT_CENTER,label,egui::FontId::proportional(19.0),egui::Color32::WHITE);ui.add_space(4.0);response.clicked()}
 
 fn native_options()->eframe::NativeOptions{eframe::NativeOptions{viewport:egui::ViewportBuilder::default().with_inner_size([420.0,850.0]).with_min_inner_size([340.0,560.0]),..Default::default()}}
