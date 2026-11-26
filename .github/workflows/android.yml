@@ -29,7 +29,13 @@ jobs:
       - name: Install cargo-apk
         run: cargo install cargo-apk --locked
       - name: Build APK
-        run: cargo apk build --release --lib --target aarch64-linux-android
+        shell: bash
+        run: |
+          set +e
+          cargo apk build --release --lib --target aarch64-linux-android 2>&1 | tee /tmp/apk-build.log
+          result=${PIPESTATUS[0]}
+          { echo '### APK build output'; echo '```text'; tail -n 160 /tmp/apk-build.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit "$result"
       - name: Collect APK
         run: |
           APK="$(find target -type f -name '*.apk' -print -quit)"
