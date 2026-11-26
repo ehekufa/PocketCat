@@ -115,7 +115,7 @@ impl PocketCat {
             ui.add_space(10.0);
             ui.horizontal(|ui| { ui.add_sized([ui.available_width()-58.0,42.0],egui::TextEdit::singleline(&mut self.new_scene).hint_text("Имя новой сцены")); if ui.add_sized([48.0,42.0],egui::Button::new(egui::RichText::new("＋").size(25.0))).clicked(){self.new_scene();} });
             ui.add_space(10.0);
-            ui.horizontal(|ui| { if ui.button("▶  Играть").clicked(){self.set_scene("menu".into(),true);self.running=true;} if ui.button("＋  Новая сцена").clicked(){self.new_scene();} }
+            ui.horizontal(|ui| { if ui.button("▶  Играть").clicked(){self.set_scene("menu".into(),true);self.running=true;} if ui.button("＋  Новая сцена").clicked(){self.new_scene();} });
             ui.add_space(8.0);
             ui.horizontal(|ui| {
                 if ui.button("⇩ Сохранить JSON").clicked() {
