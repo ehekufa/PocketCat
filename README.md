@@ -11,7 +11,7 @@ cargo test
 
 ## Android APK
 
-GitHub Actions собирает debug APK для `arm64-v8a`. Запустить workflow вручную можно через **Actions → Android APK → Run workflow**. APK сохраняется как артефакт `pocketcat-debug-apk`.
+GitHub Actions собирает оптимизированный APK для `arm64-v8a` в release-профиле. Запустить workflow вручную можно через **Actions → Android APK → Run workflow**. APK сохраняется как артефакт `pocketcat-debug-apk`. Для каждой CI-сборки используется временный ключ подписи, поэтому перед установкой новой сборки удалите предыдущую версию PocketCat.
 
 Локально нужны Rust stable, Android SDK/NDK, затем:
 
