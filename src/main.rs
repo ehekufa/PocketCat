@@ -68,7 +68,7 @@ impl eframe::App for PocketCat {
         visuals.panel_fill = egui::Color32::from_rgb(0, 43, 56);
         visuals.window_fill = egui::Color32::from_rgb(0, 52, 66);
         ctx.set_visuals(visuals);
-        if self.running { let now=std::time::Instant::now(); self.manager.tick(now.duration_since(self.last_tick).as_secs_f64().min(0.1)); self.last_tick=now; ctx.request_repaint(); }
+        if self.running { let now=std::time::Instant::now(); self.manager.tick(now.duration_since(self.last_tick).as_secs_f64().min(0.1), &mut NoopServices); self.last_tick=now; ctx.request_repaint(); }
         else { self.last_tick=std::time::Instant::now(); }
         let title = match self.page { Page::Projects => "Pocket Up".to_string(), Page::Editor => self.current_def().map(|d|d.name.clone()).unwrap_or_else(||"Сцена".into()), Page::Categories => "Категории".into(), Page::Bricks => self.category.clone() };
         egui::TopBottomPanel::top("top").exact_height(60.0).show(ctx, |ui| {
@@ -160,7 +160,10 @@ impl PocketCat {
             }
             "Мини сцены"=>{
                 let list:Vec<(String,String)>=self.manager.scene_definitions().map(|d|(d.id.clone(),d.name.clone())).collect();
-                for (id,name) in list {if brick_button(ui,&format!("Запустить сцену  {name}"),egui::Color32::from_rgb(245,194,45)){self.set_scene(id.clone(),true);self.page=Page::Editor;} if brick_button(ui,&format!("Продолжить сцену  {name}"),egui::Color32::from_rgb(245,194,45)){self.set_scene(id,false);self.page=Page::Editor;}}
+                for (id,name) in list {
+                    if brick_button(ui,&format!("Запустить сцену  {name}"),egui::Color32::from_rgb(245,194,45)){self.insert(Brick::StartScene(id.clone()));}
+                    if brick_button(ui,&format!("Продолжить сцену  {name}"),egui::Color32::from_rgb(245,194,45)){self.insert(Brick::ResumeScene(id));}
+                }
             }
             "Данные"=>{
                 ui.horizontal(|ui|{ui.text_edit_singleline(&mut self.variable_name);ui.text_edit_singleline(&mut self.variable_value);});
@@ -175,7 +178,7 @@ impl PocketCat {
 }
 fn scene_preview_color(i:usize)->egui::Color32{match i%4{0=>egui::Color32::from_rgb(78,96,88),1=>egui::Color32::from_rgb(115,8,36),2=>egui::Color32::from_rgb(245,245,240),_=>egui::Color32::from_rgb(72,8,32)}}
 fn event_card(e:Event)->(&'static str,egui::Color32){(match e{Event::Start=>"При запуске сцены",Event::Resume=>"При возобновлении сцены",Event::Touch=>"При нажатии на объект",Event::Always=>"Всегда"},egui::Color32::from_rgb(204,83,21))}
-fn brick_card_info(b:&Brick)->(String,egui::Color32){match b{Brick::SetVariable{name,value}=>(format!("Задать {name} в {value}"),egui::Color32::from_rgb(220,75,78)),Brick::SetX(v)=>(format!("Установить X в {v}"),egui::Color32::from_rgb(58,137,195)),Brick::SetY(v)=>(format!("Установить Y в {v}"),egui::Color32::from_rgb(58,137,195)),Brick::ChangeX(v)=>(format!("Изменить X на {v}"),egui::Color32::from_rgb(58,137,195)),Brick::ChangeY(v)=>(format!("Изменить Y на {v}"),egui::Color32::from_rgb(58,137,195)),Brick::SetGravity(v)=>(format!("Гравитация {v}"),egui::Color32::from_rgb(58,137,195)),Brick::Bounce=>("Отскок".into(),egui::Color32::from_rgb(58,137,195)),Brick::Wait(v)=>(format!("Ждать {v} секунд"),egui::Color32::from_rgb(248,144,83)),Brick::Say(v)=>(format!("Сказать {v}"),egui::Color32::from_rgb(248,144,83))}}
+fn brick_card_info(b:&Brick)->(String,egui::Color32){match b{Brick::StartScene(id)=>(format!("Запустить сцену {id}"),egui::Color32::from_rgb(245,194,45)),Brick::ResumeScene(id)=>(format!("Продолжить сцену {id}"),egui::Color32::from_rgb(245,194,45)),Brick::SetVariable{name,value}=>(format!("Задать {name} в {value}"),egui::Color32::from_rgb(220,75,78)),Brick::SetX(v)=>(format!("Установить X в {v}"),egui::Color32::from_rgb(58,137,195)),Brick::SetY(v)=>(format!("Установить Y в {v}"),egui::Color32::from_rgb(58,137,195)),Brick::ChangeX(v)=>(format!("Изменить X на {v}"),egui::Color32::from_rgb(58,137,195)),Brick::ChangeY(v)=>(format!("Изменить Y на {v}"),egui::Color32::from_rgb(58,137,195)),Brick::SetGravity(v)=>(format!("Гравитация {v}"),egui::Color32::from_rgb(58,137,195)),Brick::Bounce=>("Отскок".into(),egui::Color32::from_rgb(58,137,195)),Brick::Wait(v)=>(format!("Ждать {v} секунд"),egui::Color32::from_rgb(248,144,83)),Brick::Say(v)=>(format!("Сказать {v}"),egui::Color32::from_rgb(248,144,83))}}
 fn brick_card(ui:&mut egui::Ui,label:&str,color:egui::Color32){let (r,_)=ui.allocate_exact_size(egui::vec2(ui.available_width(),54.0),egui::Sense::hover());ui.painter().rect_filled(r,5.0_f32,color);ui.painter().rect_stroke(r,5.0_f32,egui::Stroke::new(1.0_f32,color.gamma_multiply(0.8)));ui.painter().text(r.min+egui::vec2(48.0,27.0),egui::Align2::LEFT_CENTER,label,egui::FontId::proportional(17.0),egui::Color32::WHITE);ui.add_space(5.0);}
 fn brick_button(ui:&mut egui::Ui,label:&str,color:egui::Color32)->bool{let (r,response)=ui.allocate_exact_size(egui::vec2(ui.available_width(),74.0),egui::Sense::click());ui.painter().rect_filled(r,3.0_f32,color);ui.painter().line_segment([r.left_top(),r.right_top()],egui::Stroke::new(2.0_f32,color.gamma_multiply(1.4_f32)));ui.painter().text(r.min+egui::vec2(62.0,37.0),egui::Align2::LEFT_CENTER,label,egui::FontId::proportional(19.0),egui::Color32::WHITE);ui.add_space(4.0);response.clicked()}
 

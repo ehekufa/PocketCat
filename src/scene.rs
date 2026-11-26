@@ -20,6 +20,8 @@ pub struct Sprite {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Brick {
     SetVariable { name: String, value: f64 },
+    StartScene(String),
+    ResumeScene(String),
     SetX(f32),
     SetY(f32),
     ChangeX(f32),
@@ -77,6 +79,7 @@ pub struct Scene {
     pub resume_events: u64,
     pub touch_enabled: bool,
     pub gravity: f32,
+    pending_transition: Option<(SceneId, SceneTransition)>,
 }
 
 impl Scene {
@@ -85,7 +88,7 @@ impl Scene {
             sprites: definition.sprites.clone(), definition,
             global_variables: HashMap::new(), lifecycle: SceneLifecycle::Loaded,
             elapsed_seconds: 0.0, start_events: 0,
-            resume_events: 0, touch_enabled: false, gravity: -9.8,
+            resume_events: 0, touch_enabled: false, gravity: -9.8, pending_transition: None,
         };
         scene
     }
@@ -106,6 +109,8 @@ impl Scene {
     fn apply(&mut self, brick: Brick) {
         match brick {
             Brick::SetVariable { name, value } => { self.global_variables.insert(name, value); }
+            Brick::StartScene(id) => self.pending_transition = Some((id, SceneTransition::StartScene)),
+            Brick::ResumeScene(id) => self.pending_transition = Some((id, SceneTransition::ResumeScene)),
             Brick::SetX(x) => { for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x = x; } }
             Brick::SetY(y) => { for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.y = y; } }
             Brick::ChangeX(dx) => { for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x += dx; } }
@@ -193,7 +198,7 @@ impl SceneManager {
         if let Some(mut scene) = self.cached_scenes.remove(id) { scene.unload(services); true } else { false }
     }
 
-    pub fn tick(&mut self, dt: f64) {
+    pub fn tick(&mut self, dt: f64, services: &mut impl SceneServices) {
         let Some(scene) = self.current_scene.as_mut() else { return };
         if scene.lifecycle != SceneLifecycle::Active { return; }
         scene.elapsed_seconds += dt.max(0.0);
@@ -202,6 +207,8 @@ impl SceneManager {
             sprite.y += scene.gravity * dt as f32 * dt as f32 * 0.5;
         }
         scene.run_event(Event::Always);
+        let pending = scene.pending_transition.take();
+        if let Some((id, mode)) = pending { let _ = self.transition(&id, mode, services); }
     }
 }
 
@@ -223,6 +230,17 @@ mod tests {
         assert_eq!(s.sprites[0].x, 43.0); assert_eq!(s.sprites[0].local_variables["lives"], 2.0);
         assert_eq!(s.start_events, 1); assert_eq!(s.resume_events, 1);
     }
+    #[test]
+    fn scene_transition_bricks_switch_scenes_at_runtime() {
+        let mut first = SceneDefinition { id: "menu".into(), name: "Menu".into(), sprites: vec![sprite()], scripts: vec![Script { event: Event::Start, bricks: vec![Brick::StartScene("game".into())] }] };
+        let second = SceneDefinition { id: "game".into(), name: "Game".into(), sprites: vec![sprite()], scripts: vec![] };
+        first.sprites[0].id = "menu sprite".into();
+        let mut m = SceneManager::new(vec![first, second]); let mut svc = NoopServices;
+        m.transition("menu", SceneTransition::StartScene, &mut svc).unwrap();
+        m.tick(0.016, &mut svc);
+        assert_eq!(m.current_scene.as_ref().unwrap().definition.id, "game");
+    }
+
     #[test]
     fn start_scene_resets_cached_runtime() {
         let mut m = manager(); let mut svc = NoopServices;
