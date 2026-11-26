@@ -26,8 +26,15 @@ jobs:
         run: cargo install cargo-apk --locked
       - name: Build APK
         run: cargo apk build --lib --target aarch64-linux-android
+      - name: Collect APK
+        run: |
+          APK="$(find target -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          mkdir -p artifacts
+          cp "$APK" artifacts/PocketCat.apk
+          ls -lh artifacts/PocketCat.apk
       - uses: actions/upload-artifact@v4
         with:
           name: pocketcat-debug-apk
-          path: target/android-artifacts/debug/apk/*.apk
+          path: artifacts/PocketCat.apk
           if-no-files-found: error
