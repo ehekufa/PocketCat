@@ -80,7 +80,7 @@ pub struct Scene {
 
 impl Scene {
     fn load(definition: SceneDefinition) -> Self {
-        let mut scene = Self {
+        let scene = Self {
             sprites: definition.sprites.clone(), definition,
             global_variables: HashMap::new(), lifecycle: SceneLifecycle::Loaded,
             elapsed_seconds: 0.0, loaded_once: true, start_events: 0,
