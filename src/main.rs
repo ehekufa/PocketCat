@@ -142,6 +142,7 @@ fn main() -> eframe::Result<()> {
 
 #[cfg(target_os = "android")]
 pub fn run_android(app: android_activity::AndroidApp) {
+    use winit::platform::android::EventLoopBuilderExtAndroid;
     let options = eframe::NativeOptions {
         event_loop_builder: Some(Box::new(move |builder| { builder.with_android_app(app); })),
         ..native_options()
