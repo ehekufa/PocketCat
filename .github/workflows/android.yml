@@ -17,7 +17,11 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: aarch64-linux-android
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install Android SDK and NDK
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;26.1.10909125"
       - name: Install cargo-apk
         run: cargo install cargo-apk --locked
       - name: Build APK

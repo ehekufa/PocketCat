@@ -131,7 +131,20 @@ fn brick_card(ui:&mut egui::Ui,text:&str,color:egui::Color32,event:bool){
     egui::Frame::default().show(ui,|ui|{ui.label(egui::RichText::new(text).strong().color(color));});
     ui.add_space(3.0);
 }
-fn main()->eframe::Result<()> {
-    let options=eframe::NativeOptions{viewport:egui::ViewportBuilder::default().with_inner_size([1120.0,740.0]).with_min_inner_size([800.0,600.0]),..Default::default()};
-    eframe::run_native("PocketCat — визуальный конструктор",options,Box::new(|_|Ok(Box::<PocketCat>::default())))
+fn native_options() -> eframe::NativeOptions {
+    eframe::NativeOptions { viewport: egui::ViewportBuilder::default().with_inner_size([1120.0,740.0]).with_min_inner_size([800.0,600.0]), ..Default::default() }
+}
+
+#[cfg(not(target_os = "android"))]
+fn main() -> eframe::Result<()> {
+    eframe::run_native("PocketCat — визуальный конструктор", native_options(), Box::new(|_| Ok(Box::<PocketCat>::default())))
+}
+
+#[cfg(target_os = "android")]
+pub fn run_android(app: android_activity::AndroidApp) {
+    let options = eframe::NativeOptions {
+        event_loop_builder: Some(Box::new(move |builder| { builder.with_android_app(app); })),
+        ..native_options()
+    };
+    let _ = eframe::run_native("PocketCat", options, Box::new(|_| Ok(Box::<PocketCat>::default())));
 }
