@@ -115,7 +115,22 @@ impl PocketCat {
             ui.add_space(10.0);
             ui.horizontal(|ui| { ui.add_sized([ui.available_width()-58.0,42.0],egui::TextEdit::singleline(&mut self.new_scene).hint_text("Имя новой сцены")); if ui.add_sized([48.0,42.0],egui::Button::new(egui::RichText::new("＋").size(25.0))).clicked(){self.new_scene();} });
             ui.add_space(10.0);
-            ui.horizontal(|ui| { if ui.button("▶  Играть").clicked(){self.set_scene("menu".into(),true);self.running=true;} if ui.button("＋  Новая сцена").clicked(){self.new_scene();} });
+            ui.horizontal(|ui) { if ui.button("▶  Играть").clicked(){self.set_scene("menu".into(),true);self.running=true;} if ui.button("＋  Новая сцена").clicked(){self.new_scene();} }
+            ui.add_space(8.0);
+            ui.horizontal(|ui| {
+                if ui.button("⇩ Сохранить JSON").clicked() {
+                    match self.manager.export_project_json().and_then(|data| std::fs::write("PocketCat-project.json", data).map_err(|e|e.to_string())) {
+                        Ok(()) => self.status="Проект сохранён в PocketCat-project.json".into(), Err(e)=>self.status=format!("Ошибка сохранения: {e}"),
+                    }
+                }
+                if ui.button("⇧ Загрузить JSON").clicked() {
+                    match std::fs::read_to_string("PocketCat-project.json") {
+                        Ok(data) => match self.manager.import_project_json(&data,&mut NoopServices) {
+                            Ok(())=>{if let Some(s)=self.manager.current_scene.as_ref(){self.selected=s.definition.id.clone();}self.status="Проект загружен".into();}, Err(e)=>self.status=format!("Ошибка проекта: {e}"),
+                        }, Err(e)=>self.status=format!("Файл проекта не найден: {e}"),
+                    }
+                }
+            });
         });
     }
     fn editor(&mut self, ui:&mut egui::Ui) {

@@ -3,10 +3,10 @@ use std::collections::HashMap;
 
 pub type SceneId = String;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum SceneTransition { StartScene, ResumeScene }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Sprite {
     pub id: String,
     pub x: f32,
@@ -17,7 +17,7 @@ pub struct Sprite {
     pub local_variables: HashMap<String, f64>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum Brick {
     SetVariable { name: String, value: f64 },
     StartScene(String),
@@ -32,13 +32,13 @@ pub enum Brick {
     Say(String),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Event { Start, Resume, Touch, Always }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Script { pub event: Event, pub bricks: Vec<Brick> }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SceneDefinition {
     pub id: SceneId,
     pub name: String,
@@ -194,6 +194,27 @@ impl SceneManager {
         Ok(())
     }
 
+    /// Export portable project data containing scenes, sprites, event hooks and bricks.
+    pub fn export_project_json(&self) -> Result<String, String> {
+        serde_json::to_string_pretty(&self.definitions.values().cloned().collect::<Vec<_>>()).map_err(|e| e.to_string())
+    }
+
+    /// Validate and replace project data, unloading active/cached runtime instances first.
+    pub fn import_project_json(&mut self, json: &str, services: &mut impl SceneServices) -> Result<(), String> {
+        let definitions: Vec<SceneDefinition> = serde_json::from_str(json).map_err(|e| e.to_string())?;
+        if definitions.is_empty() { return Err("Проект должен содержать хотя бы одну сцену".into()); }
+        let mut next = HashMap::new();
+        for definition in definitions {
+            if definition.id.trim().is_empty() || next.contains_key(&definition.id) { return Err("Пустой или повторяющийся ID сцены".into()); }
+            next.insert(definition.id.clone(), definition);
+        }
+        if let Some(mut scene) = self.current_scene.take() { scene.unload(services); }
+        for (_, mut scene) in self.cached_scenes.drain() { scene.unload(services); }
+        let first_id = next.keys().next().cloned().ok_or_else(|| "Пустой проект".to_string())?;
+        self.definitions = next;
+        self.transition(&first_id, SceneTransition::StartScene, services)
+    }
+
     pub fn reset_scene_cache(&mut self, id: &str, services: &mut impl SceneServices) -> bool {
         if let Some(mut scene) = self.cached_scenes.remove(id) { scene.unload(services); true } else { false }
     }
@@ -230,6 +251,16 @@ mod tests {
         assert_eq!(s.sprites[0].x, 43.0); assert_eq!(s.sprites[0].local_variables["lives"], 2.0);
         assert_eq!(s.start_events, 1); assert_eq!(s.resume_events, 1);
     }
+    #[test]
+    fn project_json_round_trip_preserves_bricks_and_sprites() {
+        let mut m = manager(); let mut svc = NoopServices;
+        m.transition("game", SceneTransition::StartScene, &mut svc).unwrap();
+        let exported = m.export_project_json().unwrap();
+        let mut restored = SceneManager::new(vec![SceneDefinition { id: "placeholder".into(), name: "old".into(), sprites: vec![sprite()], scripts: vec![] }]);
+        restored.import_project_json(&exported, &mut svc).unwrap();
+        assert!(restored.scene_definitions().any(|d| d.id == "game" && d.scripts[0].bricks == vec![Brick::SetVariable{name:"score".into(),value:0.0}]));
+    }
+
     #[test]
     fn scene_transition_bricks_switch_scenes_at_runtime() {
         let mut first = SceneDefinition { id: "menu".into(), name: "Menu".into(), sprites: vec![sprite()], scripts: vec![Script { event: Event::Start, bricks: vec![Brick::StartScene("game".into())] }] };
