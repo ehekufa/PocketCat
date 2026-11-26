@@ -1,0 +1,13 @@
+export component ActionButton inherits TouchArea {
+    in property <string> label;
+    in property <color> fill: #104653;
+    in property <color> label-color: #d6edef;
+    in property <length> button-width: 120px;
+    in property <length> button-height: 46px;
+    callback activate();
+    width: root.button-width;
+    height: root.button-height;
+    Rectangle { background: root.fill; border-radius: 12px; border-width: 1px; border-color: #26717a; }
+    Text { text: root.label; color: root.label-color; font-size: 14px; font-weight: 600; horizontal-alignment: center; vertical-alignment: center; }
+    clicked => { root.activate(); }
+}

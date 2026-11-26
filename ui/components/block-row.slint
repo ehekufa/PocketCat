@@ -1,0 +1,18 @@
+import { BlockItem } from "../models.slint";
+
+export component BlockRow inherits TouchArea {
+    in property <BlockItem> block;
+    callback activate();
+    height: 64px;
+    Rectangle {
+        background: root.block.color; border-radius: 12px; border-width: 1px; border-color: #ffffff30;
+        HorizontalLayout {
+            padding-left: 18px; padding-right: 14px; spacing: 14px;
+            Rectangle { width: 8px; height: 32px; background: #ffffff75; border-radius: 4px; vertical-alignment: center; }
+            Text { text: root.block.title; color: #ffffff; font-size: 15px; vertical-alignment: center; }
+            Rectangle { horizontal-stretch: 1; }
+            Text { text: "+"; color: #ffffff; font-size: 24px; vertical-alignment: center; }
+        }
+    }
+    clicked => { root.activate(); }
+}

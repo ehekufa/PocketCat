@@ -1,0 +1,43 @@
+export component HeaderBar inherits Rectangle {
+    in property <string> page;
+    in property <string> title;
+    in property <bool> running;
+    callback back();
+    callback toggle-run();
+    callback reset-scene();
+
+    height: 66px;
+    background: #073b49;
+    HorizontalLayout {
+        padding-left: 18px; padding-right: 18px; spacing: 12px;
+        if root.page != "projects": TouchArea {
+            width: 42px; height: 42px;
+            Rectangle { background: #105365; border-radius: 12px; }
+            Text { text: "‹"; color: #e7f5f7; font-size: 32px; horizontal-alignment: center; vertical-alignment: center; }
+            clicked => { root.back(); }
+        }
+        Rectangle {
+            width: 38px; height: 38px; background: #27b9a4; border-radius: 11px;
+            Text { text: "P"; color: #062d38; font-size: 24px; font-weight: 800; horizontal-alignment: center; vertical-alignment: center; }
+        }
+        VerticalLayout {
+            alignment: center; spacing: 0px;
+            Text { text: root.page == "projects" ? "Pocket Up" : root.title; color: #f0fafb; font-size: 21px; font-weight: 700; overflow: elide; }
+            if root.page == "projects": Text { text: "POCKETCAT STUDIO"; color: #73b8c0; font-size: 9px; letter-spacing: 1px; }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        if root.page == "editor": TouchArea {
+            width: 48px; height: 42px;
+            Rectangle { background: #105365; border-radius: 12px; }
+            Text { text: "⟲"; color: #d3eeee; font-size: 21px; horizontal-alignment: center; vertical-alignment: center; }
+            clicked => { root.reset-scene(); }
+        }
+        if root.page == "editor": TouchArea {
+            width: 58px; height: 42px;
+            Rectangle { background: root.running ? #e05b60 : #26b99f; border-radius: 12px; }
+            Text { text: root.running ? "■" : "▶"; color: #062d38; font-size: 19px; horizontal-alignment: center; vertical-alignment: center; }
+            clicked => { root.toggle-run(); }
+        }
+        if root.page != "editor": Text { text: "•••"; color: #89c6cd; font-size: 18px; vertical-alignment: center; }
+    }
+}

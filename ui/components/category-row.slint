@@ -1,0 +1,18 @@
+import { CategoryItem } from "../models.slint";
+
+export component CategoryRow inherits TouchArea {
+    in property <CategoryItem> category;
+    callback activate();
+    height: 64px;
+    Rectangle {
+        background: #0b4350; border-radius: 12px; border-width: 1px; border-color: #195a66;
+        HorizontalLayout {
+            padding-left: 14px; padding-right: 16px; spacing: 12px;
+            Rectangle { width: 8px; height: 34px; background: root.category.color; border-radius: 4px; vertical-alignment: center; }
+            Text { text: root.category.title; color: #e0eff1; font-size: 16px; vertical-alignment: center; }
+            Rectangle { horizontal-stretch: 1; }
+            Text { text: "›"; color: #73bec2; font-size: 24px; vertical-alignment: center; }
+        }
+    }
+    clicked => { root.activate(); }
+}

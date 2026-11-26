@@ -1,0 +1,26 @@
+import { SceneItem } from "../models.slint";
+
+export component SceneCard inherits TouchArea {
+    in property <SceneItem> scene;
+    callback open();
+    height: 116px;
+    Rectangle {
+        background: #0a4655; border-radius: 14px; border-width: 1px; border-color: #176273;
+        HorizontalLayout {
+            padding: 12px; spacing: 15px;
+            Rectangle {
+                width: 88px; height: 88px; background: #123f4a; border-radius: 12px;
+                Rectangle { x: 15px; y: 15px; width: 58px; height: 58px; background: #17a898; border-radius: 16px; }
+                Text { text: "🐈"; font-size: 32px; horizontal-alignment: center; vertical-alignment: center; }
+            }
+            VerticalLayout {
+                alignment: center; spacing: 5px;
+                Text { text: root.scene.title; color: #e1f2f4; font-size: 20px; font-weight: 700; overflow: elide; }
+                Text { text: "ИГРОВОЙ ПРОЕКТ  ·  ОТКРЫТЬ РЕДАКТОР"; color: #7db4bc; font-size: 10px; letter-spacing: 0.5px; }
+            }
+            Rectangle { horizontal-stretch: 1; }
+            Text { text: "›"; color: #7fd4ca; font-size: 30px; vertical-alignment: center; }
+        }
+    }
+    clicked => { root.open(); }
+}
