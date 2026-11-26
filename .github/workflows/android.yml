@@ -35,6 +35,7 @@ jobs:
           cargo apk build --release --lib --target aarch64-linux-android 2>&1 | tee /tmp/apk-build.log
           result=${PIPESTATUS[0]}
           { echo '### APK build output'; echo '```text'; tail -n 160 /tmp/apk-build.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$result" -ne 0 ]; then echo "::error title=APK build failed::$(tail -n 25 /tmp/apk-build.log | tr '\n' ' ')"; fi
           exit "$result"
       - name: Collect APK
         run: |
