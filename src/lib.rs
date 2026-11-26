@@ -1,3 +1,5 @@
+#![cfg_attr(not(target_os = "android"), allow(dead_code))]
+
 // eframe's NativeActivity entry point for cargo-apk.
 #[path = "main.rs"]
 mod app;
