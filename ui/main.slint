@@ -53,8 +53,8 @@ export component MainWindow inherits Window {
             }
             if root.page == "projects": ScrollView {
                 height: root.height - 94px;
-                viewport-width: self.width;
-                viewport-height: root.scenes.length * 114px + 230px;
+                content-width: self.width;
+                content-height: root.scenes.length * 114px + 230px;
                 VerticalLayout {
                     padding: 10px; spacing: 4px;
                     Text { text: root.project-scenes-title; color: #a7d5e5; font-size: 15px; height: 28px; }
@@ -64,7 +64,7 @@ export component MainWindow inherits Window {
                             background: #00495b;
                             HorizontalLayout {
                                 padding-left: 52px; padding-right: 12px; spacing: 12px;
-                                Rectangle { width: 92px; height: 84px; background: #54685f; border-width: 2px; border-color: #b0d9ea; vertical-alignment: center;
+                                Rectangle { width: 92px; height: 84px; background: #54685f; border-width: 2px; border-color: #b0d9ea;
                                     Text { text: "🐈"; font-size: 32px; horizontal-alignment: center; vertical-alignment: center; }
                                 }
                                 Text { text: scene.title; color: #b1d9ec; font-size: 21px; vertical-alignment: center; horizontal-stretch: 1; }
@@ -89,8 +89,8 @@ export component MainWindow inherits Window {
             }
             if root.page == "editor": ScrollView {
                 height: root.height - 94px;
-                viewport-width: self.width;
-                viewport-height: root.scripts.length * 62px + 330px;
+                content-width: self.width;
+                content-height: root.scripts.length * 62px + 330px;
                 VerticalLayout {
                     padding: 8px; spacing: 8px;
                     Text { text: "СЦЕНА · ОБЪЕКТЫ"; color: #d5e9ef; font-size: 16px; }
@@ -112,8 +112,8 @@ export component MainWindow inherits Window {
             }
             if root.page == "categories": ScrollView {
                 height: root.height - 94px;
-                viewport-width: self.width;
-                viewport-height: root.categories.length * 75px;
+                content-width: self.width;
+                content-height: root.categories.length * 75px;
                 VerticalLayout { spacing: 3px;
                     for category in root.categories: TouchArea {
                         height: 72px;
@@ -127,8 +127,8 @@ export component MainWindow inherits Window {
             }
             if root.page == "blocks": ScrollView {
                 height: root.height - 94px;
-                viewport-width: self.width;
-                viewport-height: root.blocks.length * 78px + 20px;
+                content-width: self.width;
+                content-height: root.blocks.length * 78px + 20px;
                 VerticalLayout { padding: 6px; spacing: 4px;
                     for block in root.blocks: TouchArea {
                         height: 74px;
