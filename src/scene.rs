@@ -28,7 +28,7 @@ pub enum Brick {
     Say(String),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Event { Start, Resume, Touch, Always }
 
 #[derive(Clone, Debug, PartialEq)]
