@@ -1,0 +1,264 @@
+import { LineEdit, ScrollView } from "std-widgets.slint";
+
+export struct SceneItem { id: string, title: string }
+export struct CategoryItem { title: string, color: color }
+export struct BlockItem { id: string, title: string, color: color }
+
+export component MainWindow inherits Window {
+    title: "Pocket Up · PocketCat";
+    width: 980px;
+    height: 720px;
+    background: #062d38;
+
+    in-out property <string> page: "projects";
+    in-out property <string> header-title: "Pocket Up";
+    in-out property <string> status: "Проект готов к редактированию";
+    in-out property <string> new-scene-name: "";
+    in-out property <string> project-scenes-title: "Мои проекты";
+    in-out property <[SceneItem]> scenes;
+    in-out property <[CategoryItem]> categories;
+    in-out property <[BlockItem]> blocks;
+    in-out property <[string]> sprites;
+    in-out property <[BlockItem]> scripts;
+    in-out property <bool> running: false;
+
+    callback back();
+    callback open-scene(string);
+    callback create-scene(string);
+    callback open-category(string);
+    callback add-block(string);
+    callback toggle-run();
+    callback save-project();
+    callback load-project();
+    callback reset-scene();
+
+    Rectangle {
+        background: #062d38;
+        VerticalLayout {
+            spacing: 0px;
+            Rectangle {
+                height: 66px;
+                background: #073b49;
+                border-color: #155160;
+                border-width: 0px;
+                HorizontalLayout {
+                    padding-left: 18px; padding-right: 18px; spacing: 12px;
+                    if root.page != "projects": TouchArea {
+                        width: 42px; height: 42px;
+                        Rectangle { background: #105365; border-radius: 12px; }
+                        Text { text: "‹"; color: #e7f5f7; font-size: 32px; horizontal-alignment: center; vertical-alignment: center; }
+                        clicked => { root.back(); }
+                    }
+                    Rectangle {
+                        width: 38px; height: 38px; background: #27b9a4; border-radius: 11px;
+                        Text { text: "P"; color: #062d38; font-size: 24px; font-weight: 800; horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 0px;
+                        Text { text: root.page == "projects" ? "Pocket Up" : root.header-title; color: #f0fafb; font-size: 21px; font-weight: 700; overflow: elide; }
+                        if root.page == "projects": Text { text: "POCKETCAT STUDIO"; color: #73b8c0; font-size: 9px; letter-spacing: 1px; }
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                    if root.page == "editor": TouchArea {
+                        width: 48px; height: 42px;
+                        Rectangle { background: #105365; border-radius: 12px; }
+                        Text { text: "⟲"; color: #d3eeee; font-size: 21px; horizontal-alignment: center; vertical-alignment: center; }
+                        clicked => { root.reset-scene(); }
+                    }
+                    if root.page == "editor": TouchArea {
+                        width: 58px; height: 42px;
+                        Rectangle { background: root.running ? #e05b60 : #26b99f; border-radius: 12px; }
+                        Text { text: root.running ? "■" : "▶"; color: #062d38; font-size: 19px; horizontal-alignment: center; vertical-alignment: center; }
+                        clicked => { root.toggle-run(); }
+                    }
+                    if root.page != "editor": Text { text: "•••"; color: #89c6cd; font-size: 18px; vertical-alignment: center; }
+                }
+            }
+
+            if root.page == "projects": ScrollView {
+                height: root.height - 104px;
+                content-width: self.width;
+                content-height: root.scenes.length * 132px + 270px;
+                VerticalLayout {
+                    padding-left: 18px; padding-right: 18px; padding-top: 18px; padding-bottom: 20px; spacing: 12px;
+                    HorizontalLayout {
+                        Text { text: "МОИ ПРОЕКТЫ"; color: #76bcc4; font-size: 11px; letter-spacing: 1px; vertical-alignment: center; }
+                        Rectangle { horizontal-stretch: 1; }
+                        Text { text: "СЦЕНЫ · " + root.scenes.length; color: #87b9c0; font-size: 12px; vertical-alignment: center; }
+                    }
+                    for scene in root.scenes: TouchArea {
+                        height: 116px;
+                        Rectangle {
+                            background: #0a4655; border-radius: 14px; border-width: 1px; border-color: #176273;
+                            HorizontalLayout {
+                                padding: 12px; spacing: 15px;
+                                Rectangle {
+                                    width: 88px; height: 88px; background: #123f4a; border-radius: 12px;
+                                    Rectangle { x: 15px; y: 15px; width: 58px; height: 58px; background: #17a898; border-radius: 16px; }
+                                    Text { text: "🐈"; font-size: 32px; horizontal-alignment: center; vertical-alignment: center; }
+                                }
+                                VerticalLayout {
+                                    alignment: center; spacing: 5px;
+                                    Text { text: scene.title; color: #e1f2f4; font-size: 20px; font-weight: 700; overflow: elide; }
+                                    Text { text: "ИГРОВОЙ ПРОЕКТ  ·  ОТКРЫТЬ РЕДАКТОР"; color: #7db4bc; font-size: 10px; letter-spacing: 0.5px; }
+                                }
+                                Rectangle { horizontal-stretch: 1; }
+                                Text { text: "›"; color: #7fd4ca; font-size: 30px; vertical-alignment: center; }
+                            }
+                        }
+                        clicked => { root.open-scene(scene.id); }
+                    }
+                    Rectangle {
+                        height: 1px; background: #184b57;
+                    }
+                    Text { text: "СОЗДАТЬ СЦЕНУ"; color: #77bbc3; font-size: 11px; letter-spacing: 1px; }
+                    HorizontalLayout {
+                        spacing: 10px;
+                        LineEdit { text <=> root.new-scene-name; placeholder-text: "Например: Первый уровень"; }
+                        TouchArea {
+                            width: 54px; height: 48px;
+                            Rectangle { background: #21b69e; border-radius: 12px; }
+                            Text { text: "+"; color: #062d38; font-size: 30px; horizontal-alignment: center; vertical-alignment: center; }
+                            clicked => { root.create-scene(root.new-scene-name); }
+                        }
+                    }
+                    HorizontalLayout {
+                        spacing: 10px;
+                        TouchArea {
+                            height: 46px; horizontal-stretch: 1;
+                            Rectangle { background: #0d7f78; border-radius: 12px; }
+                            Text { text: "▶  Играть"; color: #f1ffff; font-size: 15px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                            clicked => { root.toggle-run(); }
+                        }
+                        TouchArea {
+                            height: 46px; horizontal-stretch: 1;
+                            Rectangle { background: #104653; border-radius: 12px; border-width: 1px; border-color: #26717a; }
+                            Text { text: "⇩  Экспорт"; color: #d6edef; font-size: 14px; horizontal-alignment: center; vertical-alignment: center; }
+                            clicked => { root.save-project(); }
+                        }
+                        TouchArea {
+                            height: 46px; horizontal-stretch: 1;
+                            Rectangle { background: #104653; border-radius: 12px; border-width: 1px; border-color: #26717a; }
+                            Text { text: "⇧  Импорт"; color: #d6edef; font-size: 14px; horizontal-alignment: center; vertical-alignment: center; }
+                            clicked => { root.load-project(); }
+                        }
+                    }
+                }
+            }
+
+            if root.page == "editor": ScrollView {
+                height: root.height - 104px;
+                content-width: self.width;
+                content-height: root.scripts.length * 76px + 440px;
+                VerticalLayout {
+                    padding-left: 14px; padding-right: 14px; padding-top: 10px; padding-bottom: 18px; spacing: 10px;
+                    HorizontalLayout {
+                        height: 38px; spacing: 18px;
+                        Text { text: "СЦЕНА"; color: #e4f4f5; font-size: 13px; font-weight: 700; vertical-alignment: center; }
+                        Text { text: "ОБЪЕКТЫ  " + root.sprites.length; color: #7caeb6; font-size: 13px; vertical-alignment: center; }
+                        Rectangle { horizontal-stretch: 1; }
+                        Text { text: "16:9"; color: #79b9bd; font-size: 11px; vertical-alignment: center; }
+                    }
+                    Rectangle {
+                        height: 226px; background: #edf3f1; border-radius: 8px; border-width: 1px; border-color: #5a7b7e;
+                        Rectangle { x: 0px; y: 112px; height: 1px; width: parent.width; background: #d9e4e0; }
+                        Rectangle { x: parent.width / 2; y: 0px; width: 1px; height: parent.height; background: #d9e4e0; }
+                        for sprite in root.sprites: Rectangle {
+                            x: parent.width / 2 - 31px; y: parent.height / 2 - 31px; width: 62px; height: 62px;
+                            background: #91c94d; border-radius: 31px;
+                            Text { text: sprite == "Звезда" ? "★" : "🐈"; color: #fffef2; font-size: 25px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                    }
+                    HorizontalLayout {
+                        height: 38px; spacing: 8px;
+                        Rectangle { width: 7px; height: 7px; background: #36c4ad; border-radius: 4px; }
+                        Text { text: root.sprites.length > 0 ? root.sprites[0] : "Объект не выбран"; color: #9acbd0; font-size: 13px; vertical-alignment: center; }
+                        Rectangle { horizontal-stretch: 1; }
+                        Text { text: "+  ДОБАВИТЬ ОБЪЕКТ"; color: #59c7b6; font-size: 10px; vertical-alignment: center; }
+                    }
+                    Rectangle { height: 1px; background: #174c58; }
+                    HorizontalLayout {
+                        height: 42px;
+                        Text { text: "СЦЕНАРИИ"; color: #d8edef; font-size: 15px; font-weight: 700; vertical-alignment: center; }
+                        Rectangle { horizontal-stretch: 1; }
+                        TouchArea {
+                            width: 112px; height: 36px;
+                            Rectangle { background: #0d746f; border-radius: 10px; }
+                            Text { text: "＋  Блоки"; color: #f0ffff; font-size: 13px; horizontal-alignment: center; vertical-alignment: center; }
+                            clicked => { root.page = "categories"; root.header-title = "Категории блоков"; }
+                        }
+                    }
+                    for block in root.scripts: Rectangle {
+                        height: 60px; background: block.color; border-radius: 10px; border-width: 1px; border-color: #ffffff30;
+                        HorizontalLayout {
+                            padding-left: 18px; padding-right: 14px; spacing: 12px;
+                            Rectangle { width: 28px; height: 28px; background: #ffffff25; border-radius: 8px;
+                                Text { text: "⚑"; color: #fff4e8; font-size: 15px; horizontal-alignment: center; vertical-alignment: center; }
+                            }
+                            Text { text: block.title; color: #fffaf4; font-size: 16px; font-weight: 600; vertical-alignment: center; }
+                        }
+                    }
+                }
+            }
+
+            if root.page == "categories": ScrollView {
+                height: root.height - 104px;
+                content-width: self.width;
+                content-height: root.categories.length * 76px + 30px;
+                VerticalLayout {
+                    padding: 14px; spacing: 8px;
+                    Text { text: "ВЫБЕРИТЕ КАТЕГОРИЮ"; color: #83bec4; font-size: 11px; letter-spacing: 1px; }
+                    for category in root.categories: TouchArea {
+                        height: 64px;
+                        Rectangle {
+                            background: #0b4350; border-radius: 12px; border-width: 1px; border-color: #195a66;
+                            HorizontalLayout {
+                                padding-left: 14px; padding-right: 16px; spacing: 12px;
+                                Rectangle { width: 8px; height: 34px; background: category.color; border-radius: 4px; vertical-alignment: center; }
+                                Text { text: category.title; color: #e0eff1; font-size: 16px; vertical-alignment: center; }
+                                Rectangle { horizontal-stretch: 1; }
+                                Text { text: "›"; color: #73bec2; font-size: 24px; vertical-alignment: center; }
+                            }
+                        }
+                        clicked => { root.open-category(category.title); }
+                    }
+                }
+            }
+
+            if root.page == "blocks": ScrollView {
+                height: root.height - 104px;
+                content-width: self.width;
+                content-height: root.blocks.length * 78px + 35px;
+                VerticalLayout {
+                    padding: 14px; spacing: 8px;
+                    Text { text: "НАЖМИТЕ, ЧТОБЫ ДОБАВИТЬ В СЦЕНАРИЙ"; color: #83bec4; font-size: 11px; letter-spacing: 0.5px; }
+                    for block in root.blocks: TouchArea {
+                        height: 64px;
+                        Rectangle {
+                            background: block.color; border-radius: 12px; border-width: 1px; border-color: #ffffff30;
+                            HorizontalLayout {
+                                padding-left: 18px; padding-right: 14px;
+                                Rectangle { width: 8px; height: 32px; background: #ffffff75; border-radius: 4px; vertical-alignment: center; }
+                                Text { text: block.title; color: #ffffff; font-size: 15px; vertical-alignment: center; x: 14px; }
+                                Rectangle { horizontal-stretch: 1; }
+                                Text { text: "+"; color: #ffffff; font-size: 24px; vertical-alignment: center; }
+                            }
+                        }
+                        clicked => { root.add-block(block.id); }
+                    }
+                }
+            }
+
+            Rectangle {
+                height: 38px; background: #052933; border-color: #17454f; border-width: 1px;
+                HorizontalLayout {
+                    padding-left: 14px; padding-right: 14px; spacing: 9px;
+                    Rectangle { width: 7px; height: 7px; background: #38c6aa; border-radius: 4px; vertical-alignment: center; }
+                    Text { text: root.status; color: #91b8bd; font-size: 11px; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+                    if root.page == "projects": Text { text: root.scenes.length + " сцен"; color: #628f97; font-size: 10px; vertical-alignment: center; }
+                }
+            }
+        }
+    }
+}
