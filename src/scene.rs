@@ -71,7 +71,6 @@ pub struct Scene {
     pub global_variables: HashMap<String, f64>,
     pub lifecycle: SceneLifecycle,
     pub elapsed_seconds: f64,
-    pub loaded_once: bool,
     pub start_events: u64,
     pub resume_events: u64,
     pub touch_enabled: bool,
@@ -83,7 +82,7 @@ impl Scene {
         let scene = Self {
             sprites: definition.sprites.clone(), definition,
             global_variables: HashMap::new(), lifecycle: SceneLifecycle::Loaded,
-            elapsed_seconds: 0.0, loaded_once: true, start_events: 0,
+            elapsed_seconds: 0.0, start_events: 0,
             resume_events: 0, touch_enabled: false, gravity: -9.8,
         };
         scene
