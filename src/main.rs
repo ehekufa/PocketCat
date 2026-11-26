@@ -97,7 +97,7 @@ impl eframe::App for PocketCat {
             ui.columns(2, |cols| {
                 let ui=&mut cols[0]; ui.label(egui::RichText::new("СЦЕНА").strong());
                 let available=ui.available_size(); let (rect,_)=ui.allocate_exact_size(available,egui::Sense::hover());
-                ui.painter().rect_filled(rect,12.0,egui::Color32::from_rgb(27,31,43));
+                ui.painter().rect_filled(rect,egui::Rounding::same(12.0),egui::Color32::from_rgb(27,31,43));
                 ui.painter().rect_stroke(rect,egui::Rounding::same(12.0),egui::Stroke::new(1.0,egui::Color32::from_gray(55)));
                 if let Some(scene)=self.manager.current_scene.as_ref() {
                     for sprite in scene.sprites.iter().filter(|s|s.visible) {
@@ -128,7 +128,7 @@ impl eframe::App for PocketCat {
     }
 }
 fn brick_card(ui:&mut egui::Ui,text:&str,color:egui::Color32,event:bool){
-    egui::Frame::default().fill(color.gamma_multiply(if event {0.3}else{0.22})).stroke(egui::Stroke::new(1.0,color.gamma_multiply(0.65))).rounding(egui::Rounding::same(8.0)).inner_margin(egui::Margin::symmetric(12,9)).show(ui,|ui|{ui.label(egui::RichText::new(text).strong().color(color));});
+    egui::Frame::default().fill(color.gamma_multiply(if event {0.3}else{0.22})).stroke(egui::Stroke::new(1.0,color.gamma_multiply(0.65))).rounding(egui::Rounding::same(8.0)).inner_margin(egui::Margin::symmetric(12.0,9.0)).show(ui,|ui|{ui.label(egui::RichText::new(text).strong().color(color));});
     ui.add_space(3.0);
 }
 fn main()->eframe::Result<()> {
