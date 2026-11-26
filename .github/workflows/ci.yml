@@ -12,6 +12,8 @@ jobs:
   test:
     name: Tests and compile check
     runs-on: ubuntu-latest
+    env:
+      RUST_FONTCONFIG_DLOPEN: "on"
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
