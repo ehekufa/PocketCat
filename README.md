@@ -17,7 +17,7 @@ Workflow **Android APK** собирает debug APK для `arm64-v8a` при з
 ```sh
 cargo install cargo-apk
 rustup target add aarch64-linux-android
-cargo apk build --target aarch64-linux-android
+cargo apk build --lib --target aarch64-linux-android
 ```
 
 ## Scene Manager
