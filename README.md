@@ -1,5 +1,7 @@
 # PocketCat
 
+The visual block palette is based on the block categories and catalog in [upsouls/Pocket-Up](https://github.com/upsouls/Pocket-Up) (upstream revision `5b2ff2fd6c41f28196c277729cf5d15ca8323998`). PocketCat's catalog is metadata-only: displaying a block does not imply that its runtime behavior has been implemented.
+
 Rust-порт мобильного конструктора игр Pocket-Up/Pocket Code. UI рисуется Slint (`ui/main.slint`), игровая модель/движок реализованы на Rust; Android использует Slint NativeActivity backend.
 
 ## Запуск и тесты

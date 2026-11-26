@@ -1,0 +1,1072 @@
+[
+  {
+    "id": "used",
+    "title": "Добавлено в этом обновлении",
+    "color": "#888888",
+    "blocks": [
+      {
+        "id": "changeLayer",
+        "title": "Изменить слой"
+      }
+    ]
+  },
+  {
+    "id": "event",
+    "title": "События",
+    "color": "#cd5314",
+    "blocks": [
+      {
+        "id": "keypressed",
+        "title": "Когда нажата клавиша"
+      },
+      {
+        "id": "endKeypressed",
+        "title": "Когда клавиша отпущена"
+      },
+      {
+        "id": "start",
+        "title": "При запуске сцены"
+      },
+      {
+        "id": "touchBack",
+        "title": "При нажатии на кнопку назад"
+      },
+      {
+        "id": "touchObject",
+        "title": "При нажатии на объект"
+      },
+      {
+        "id": "movedObject",
+        "title": "При перемещении по объекту"
+      },
+      {
+        "id": "onTouchObject",
+        "title": "При отпускании от объекта"
+      },
+      {
+        "id": "touchScreen",
+        "title": "При нажатии на экран"
+      },
+      {
+        "id": "movedScreen",
+        "title": "При перемещении по экрану"
+      },
+      {
+        "id": "onTouchScreen",
+        "title": "При отпускании от экрана"
+      },
+      {
+        "id": "function",
+        "title": "Когда будет получен сигнал"
+      },
+      {
+        "id": "broadcastFunction",
+        "title": "Вещать всем"
+      },
+      {
+        "id": "broadcastFunctionAndWait",
+        "title": "Вещать всем и ждать"
+      },
+      {
+        "id": "broadcastFun>allObjects",
+        "title": "Вещать всем объектам"
+      },
+      {
+        "id": "broadcastFun>allClones",
+        "title": "Вещать всем актерам"
+      },
+      {
+        "id": "broadcastFun>objectAndClones",
+        "title": "Вещать объекту и его актерам"
+      },
+      {
+        "id": "broadcastFun>object",
+        "title": "Вещать объекту"
+      },
+      {
+        "id": "broadcastFun>clones",
+        "title": "Вещать всем актерам объекта"
+      },
+      {
+        "id": "addNameClone",
+        "title": "Дать имя актеру"
+      },
+      {
+        "id": "broadcastFun>nameClone",
+        "title": "Вещать актеру объекта с именем"
+      },
+      {
+        "id": "whenTheTruth",
+        "title": "Как только становится истинной"
+      },
+      {
+        "id": "collision",
+        "title": "При столкновении с"
+      },
+      {
+        "id": "endedCollision",
+        "title": "После столкновения с"
+      },
+      {
+        "id": "changeBackground",
+        "title": "Когда фон изменится на"
+      },
+      {
+        "id": "startClone",
+        "title": "Когда начинает как клон"
+      },
+      {
+        "id": "clone",
+        "title": "Клонировать"
+      },
+      {
+        "id": "deleteClone",
+        "title": "Удалить этот клон"
+      }
+    ]
+  },
+  {
+    "id": "control",
+    "title": "Управление",
+    "color": "#f89053",
+    "blocks": [
+      {
+        "id": "timer3",
+        "title": "Каждые 1 секунду в течение 5 секунд"
+      },
+      {
+        "id": "wait",
+        "title": "Ждать секунд"
+      },
+      {
+        "id": "commentary",
+        "title": "Примечание"
+      },
+      {
+        "id": "cycleForever",
+        "title": "Повторять всегда"
+      },
+      {
+        "id": "ifElse (2)",
+        "title": "Если / иначе"
+      },
+      {
+        "id": "if (2)",
+        "title": "If (2)"
+      },
+      {
+        "id": "waitIfTrue2",
+        "title": "Ждать до тех пор, пока истина"
+      },
+      {
+        "id": "repeat",
+        "title": "Повторить заданное число раз"
+      },
+      {
+        "id": "repeatIsTrue",
+        "title": "Повторять пока истинно"
+      },
+      {
+        "id": "for",
+        "title": "Цикл со счётчиком"
+      },
+      {
+        "id": "foreach",
+        "title": "Для каждого элемента"
+      },
+      {
+        "id": "continueScene",
+        "title": "Продолжить сцену"
+      },
+      {
+        "id": "deleteScene",
+        "title": "Удалить сцену"
+      },
+      {
+        "id": "runScene",
+        "title": "Запустить сцену"
+      },
+      {
+        "id": "exitGame",
+        "title": "Завершить сеанс"
+      },
+      {
+        "id": "stopScript",
+        "title": "Остановить сценарий"
+      },
+      {
+        "id": "drawMode",
+        "title": "Каркасная отрисовка"
+      },
+      {
+        "id": "startClone",
+        "title": "Когда начинает как клон"
+      },
+      {
+        "id": "clone",
+        "title": "Клонировать"
+      },
+      {
+        "id": "deleteClone",
+        "title": "Удалить этот клон"
+      },
+      {
+        "id": "deleteAllClones",
+        "title": "Удалить все клоны объекта"
+      }
+    ]
+  },
+  {
+    "id": "physic",
+    "title": "Движение и физика",
+    "color": "#3a89c3",
+    "blocks": [
+      {
+        "id": "setPosition",
+        "title": "Поместить в X Y"
+      },
+      {
+        "id": "setPositionX",
+        "title": "Установить X в"
+      },
+      {
+        "id": "setPositionY",
+        "title": "Установить Y в"
+      },
+      {
+        "id": "editPositionX",
+        "title": "Изменить X на"
+      },
+      {
+        "id": "editPositionY",
+        "title": "Изменить Y на"
+      },
+      {
+        "id": "goTo",
+        "title": "Перейти в"
+      },
+      {
+        "id": "changeLayer",
+        "title": "Изменить слой"
+      },
+      {
+        "id": "goSteps",
+        "title": "Идти шагов"
+      },
+      {
+        "id": "editRotateLeft",
+        "title": "Повернуть налево на градусов"
+      },
+      {
+        "id": "editRotateRight",
+        "title": "Повернуть направо на градусов"
+      },
+      {
+        "id": "setRotate",
+        "title": "Указать в направлении градусов"
+      },
+      {
+        "id": "setRotationDegPerSecond",
+        "title": "Задать скорость вращения градусов в секунду"
+      },
+      {
+        "id": "setRotateToObject",
+        "title": "Указать в направление к"
+      },
+      {
+        "id": "setTypeRotate",
+        "title": "Задать тип вращения"
+      },
+      {
+        "id": "transitionPosition2",
+        "title": "Скользить секунд по X Y"
+      },
+      {
+        "id": "setLayer",
+        "title": "Установить слой на"
+      },
+      {
+        "id": "toFrontLayer",
+        "title": "Переместить на передний план"
+      },
+      {
+        "id": "isSensor",
+        "title": "физические столконовения"
+      },
+      {
+        "id": "toBackLayer",
+        "title": "Переместить на задний план"
+      },
+      {
+        "id": "vibration",
+        "title": "Вибрировать секунд"
+      },
+      {
+        "id": "addBody",
+        "title": "Задать тип движения"
+      },
+      {
+        "id": "speedStepsToSecoond",
+        "title": "Задать скорость X Y шагов в секунду"
+      },
+      {
+        "id": "rotateLeftForever",
+        "title": "Вращать влево градусов"
+      },
+      {
+        "id": "rotateRightForever",
+        "title": "Вращать вправо градусов"
+      },
+      {
+        "id": "setGravityAllObjects",
+        "title": "Задать силу тяжести для все... X Y шагов в секунду"
+      },
+      {
+        "id": "setWeight",
+        "title": "Задать массу килограмм"
+      },
+      {
+        "id": "setElasticity",
+        "title": "Задать упругость"
+      },
+      {
+        "id": "setFriction",
+        "title": "Задать трение"
+      },
+      {
+        "id": "showHitboxes",
+        "title": "Показать хитбоксы"
+      },
+      {
+        "id": "hideHitboxes",
+        "title": "Спрятать хитбоксы"
+      },
+      {
+        "id": "setTextelCoarseness",
+        "title": "Задать грубость тела на"
+      },
+      {
+        "id": "jump",
+        "title": "Прыгнуть по X и Y"
+      },
+      {
+        "id": "jumpX",
+        "title": "Прыгнуть по X"
+      },
+      {
+        "id": "jumpY",
+        "title": "Прыгнуть по Y"
+      },
+      {
+        "id": "jumpYIf",
+        "title": "Прыгнуть по Y на если объект касается поверхности"
+      },
+      {
+        "id": "setGravityScale",
+        "title": "Установить объекту масштаб гравитации"
+      },
+      {
+        "id": "setQuareHitbox",
+        "title": "Задать прямоугольную область столкновений"
+      },
+      {
+        "id": "setQuareWHHitbox",
+        "title": "Задать ширину и высоту области столкновений"
+      },
+      {
+        "id": "setCircleHitbox",
+        "title": "Задать круглую область столкновений"
+      }
+    ]
+  },
+  {
+    "id": "sounds",
+    "title": "Звуки",
+    "color": "#8e41b5",
+    "blocks": [
+      {
+        "id": "playSound",
+        "title": "Воспроизвести звук"
+      },
+      {
+        "id": "playSoundAndWait",
+        "title": "Воспроизвести звук и ждать"
+      },
+      {
+        "id": "stopSound",
+        "title": "Остановить звук"
+      },
+      {
+        "id": "stopAllSounds",
+        "title": "Остановить все звуки"
+      },
+      {
+        "id": "setVolumeSound",
+        "title": "Задать громкость"
+      },
+      {
+        "id": "editVolumeSound",
+        "title": "Изменить громкость на"
+      },
+      {
+        "id": "playSoundId",
+        "title": "Воспроизвести звук по номеру"
+      },
+      {
+        "id": "playSoundIdAndWait",
+        "title": "Воспроизвести звук по номеру и ждать"
+      },
+      {
+        "id": "setVolumeSoundSpecific",
+        "title": "Задать громкость выбранного звука"
+      },
+      {
+        "id": "setVolumeSoundIdSpecific",
+        "title": "Задать громкость звука по номеру"
+      }
+    ]
+  },
+  {
+    "id": "videos",
+    "title": "Видео",
+    "color": "#8e41b5",
+    "blocks": [
+      {
+        "id": "createVideo",
+        "title": "Создать видео"
+      },
+      {
+        "id": "setPositionVideo",
+        "title": "Установить положение видео"
+      },
+      {
+        "id": "setPositionXVideo",
+        "title": "Поместить видео по X"
+      },
+      {
+        "id": "setPositionYVideo",
+        "title": "Поместить видео по Y"
+      },
+      {
+        "id": "editPositionXVideo",
+        "title": "Изменить позицию X видео на"
+      },
+      {
+        "id": "editPositionYVideo",
+        "title": "Изменить позицию Y видео на"
+      },
+      {
+        "id": "playVideo",
+        "title": "Проиграть видео"
+      },
+      {
+        "id": "pauseVideo",
+        "title": "Поставить на паузу видео"
+      },
+      {
+        "id": "seekVideo",
+        "title": "Перемотать видео Метка(в секундах)"
+      },
+      {
+        "id": "deleteVideo",
+        "title": "Удалить видео"
+      },
+      {
+        "id": "insertVideoToCamera",
+        "title": "Показать видео в камере"
+      },
+      {
+        "id": "removeVideoToCamera",
+        "title": "Скрыть видео из камеры"
+      },
+      {
+        "id": "insertVideoToMiniScene",
+        "title": "Добавить видео в мини-сцену"
+      },
+      {
+        "id": "eventListenerVideo",
+        "title": "Когда видео изменит состояние"
+      }
+    ]
+  },
+  {
+    "id": "images",
+    "title": "Внешний вид и сцена",
+    "color": "#669e48",
+    "blocks": [
+      {
+        "id": "setImageToName",
+        "title": "Установить образ по имени"
+      },
+      {
+        "id": "setImageToId",
+        "title": "Установить образ по номеру"
+      },
+      {
+        "id": "nextImage",
+        "title": "Следующий образ"
+      },
+      {
+        "id": "previousImage",
+        "title": "Предыдущий образ"
+      },
+      {
+        "id": "setSize",
+        "title": "Задать размер"
+      },
+      {
+        "id": "editSize",
+        "title": "Изменить размер на"
+      },
+      {
+        "id": "hide",
+        "title": "Спрятать"
+      },
+      {
+        "id": "show",
+        "title": "Показать"
+      },
+      {
+        "id": "setBackgroundColor",
+        "title": "Установить цвет фона"
+      },
+      {
+        "id": "setBackgroundColorHex",
+        "title": "Установить цвет фона по HEX-коду"
+      },
+      {
+        "id": "ask",
+        "title": "Спросить и сохранить ответ"
+      },
+      {
+        "id": "sayTime",
+        "title": "Сказать в течение секунд"
+      },
+      {
+        "id": "thinkTime",
+        "title": "Думать в течение секунд"
+      },
+      {
+        "id": "setAlpha",
+        "title": "Задать прозрачность значение"
+      },
+      {
+        "id": "editAlpha",
+        "title": "Изменить прозрачность на"
+      },
+      {
+        "id": "setBrightness",
+        "title": "Задать яркость значение"
+      },
+      {
+        "id": "editBrightness",
+        "title": "Изменить яркость на"
+      },
+      {
+        "id": "setColor",
+        "title": "Задать цвет значение"
+      },
+      {
+        "id": "editColor",
+        "title": "Изменить цвет на"
+      },
+      {
+        "id": "focusCameraToObject",
+        "title": "Сфокусироваться на объект с % горизонтальной и % вертикальной гибкостью"
+      },
+      {
+        "id": "removeObjectCamera",
+        "title": "Отвязать от камеры"
+      },
+      {
+        "id": "insertObjectCamera",
+        "title": "Привязать к камере"
+      },
+      {
+        "id": "removeFocusCameraToObject",
+        "title": "Убрать фокус с объекта"
+      },
+      {
+        "id": "changeBackground",
+        "title": "Когда фон изменится на"
+      },
+      {
+        "id": "setImageBackgroundToName",
+        "title": "Задать фон по имени"
+      },
+      {
+        "id": "setImageBackgroundToId",
+        "title": "Задать фон по номеру"
+      },
+      {
+        "id": "getLinkImage",
+        "title": "Получить изображение из и использовать как текущий..."
+      },
+      {
+        "id": "setAnchor",
+        "title": "Задать центр по X и Y"
+      }
+    ]
+  },
+  {
+    "id": "particles",
+    "title": "Частицы",
+    "color": "#669e48",
+    "blocks": [
+      {
+        "id": "setPositionParticle",
+        "title": "Установить позицию частицам Имя частиц X Y"
+      },
+      {
+        "id": "editPositionXParticle",
+        "title": "Изменить позицию частиц с именем На X"
+      },
+      {
+        "id": "editPositionYParticle",
+        "title": "Изменить позицию частиц с именем на Y"
+      },
+      {
+        "id": "deleteParticle",
+        "title": "Удалить частицы Имя частиц"
+      },
+      {
+        "id": "deleteAllParticles",
+        "title": "Удалить все частицы"
+      },
+      {
+        "id": "createRadialParticle",
+        "title": "Создать радиальные частицы"
+      },
+      {
+        "id": "createLinearParticle",
+        "title": "Создать линейные частицы"
+      }
+    ]
+  },
+  {
+    "id": "pen",
+    "title": "Перо",
+    "color": "#325e1d",
+    "blocks": [
+      {
+        "id": "lowerPen",
+        "title": "Опустить перо"
+      },
+      {
+        "id": "raisePen",
+        "title": "Поднять перо"
+      },
+      {
+        "id": "setSizePen",
+        "title": "Задать размер пера"
+      },
+      {
+        "id": "setColorPen",
+        "title": "Задать цвет пера красный зеленый синий"
+      },
+      {
+        "id": "stamp",
+        "title": "Штамп"
+      },
+      {
+        "id": "clearPen",
+        "title": "Очистить"
+      }
+    ]
+  },
+  {
+    "id": "data",
+    "title": "Данные",
+    "color": "#e84449",
+    "blocks": [
+      {
+        "id": "setVariable",
+        "title": "Присвоить переменной значение"
+      },
+      {
+        "id": "editVariable",
+        "title": "Изменить значение переменн... на"
+      },
+      {
+        "id": "showVariable",
+        "title": "Показать переменную На X Y"
+      },
+      {
+        "id": "showVariable2",
+        "title": "Показать переменную на сцене"
+      },
+      {
+        "id": "setAnchorVariable",
+        "title": "Задать точку привязки переменной по X и Y"
+      },
+      {
+        "id": "fbGetValue",
+        "title": "Получить значение из базы FireBase и сохранить в"
+      },
+      {
+        "id": "fbSetValue",
+        "title": "Записать значение в ключ в базу FireBase"
+      },
+      {
+        "id": "fbDelValue",
+        "title": "Удалить ключ из базы FireBase"
+      },
+      {
+        "id": "hideVariable",
+        "title": "Скрыть переменную"
+      },
+      {
+        "id": "insertVariableCamera",
+        "title": "Привязать к камере переменную"
+      },
+      {
+        "id": "removeVariableCamera",
+        "title": "Отвязать от камеры переменную"
+      },
+      {
+        "id": "saveVariable",
+        "title": "Сохранить переменную на уст..."
+      },
+      {
+        "id": "readVariable",
+        "title": "Прочитать переменную с устр..."
+      },
+      {
+        "id": "addElementArray",
+        "title": "Добавить к списку"
+      },
+      {
+        "id": "deleteElementArray",
+        "title": "Удалить элемент из списка На позиции"
+      },
+      {
+        "id": "deleteAllElementsArray",
+        "title": "Удалить все элементы из спи..."
+      },
+      {
+        "id": "pasteElementArray",
+        "title": "Вставить в список на позицию"
+      },
+      {
+        "id": "replaceElementArray",
+        "title": "Заменить предмет в списке с позиции на"
+      },
+      {
+        "id": "saveArray",
+        "title": "Сохранить список на устройст..."
+      },
+      {
+        "id": "readArray",
+        "title": "Считать список с устройства"
+      },
+      {
+        "id": "columnStorageToArray",
+        "title": "Скопировать данные таблицы в массив"
+      },
+      {
+        "id": "getRequest",
+        "title": "Получить данные из запроса"
+      },
+      {
+        "id": "toFrontLayerVar",
+        "title": "Переместить переменную на передний план"
+      },
+      {
+        "id": "toBackLayerVar",
+        "title": "Переместить переменную на задний план"
+      }
+    ]
+  },
+  {
+    "id": "device",
+    "title": "Устройство",
+    "color": "#977007",
+    "blocks": [
+      {
+        "id": "openLink",
+        "title": "Открыть в браузере"
+      },
+      {
+        "id": "blockTouch",
+        "title": "Коснуться до объекта"
+      },
+      {
+        "id": "blockTouchScreen",
+        "title": "Прикоснуться к экрану"
+      },
+      {
+        "id": "showToast",
+        "title": "Показать уведомление"
+      },
+      {
+        "id": "runLua",
+        "title": "Выполнить Lua-код"
+      },
+      {
+        "id": "hideSysPanels",
+        "title": "Скрыть системные панели"
+      },
+      {
+        "id": "showSysPanels",
+        "title": "Показать системные панели"
+      },
+      {
+        "id": "setHorizontalOrientation",
+        "title": "Установить горизонтальную ориентацию"
+      },
+      {
+        "id": "setVerticalOrientation",
+        "title": "Установить вертикальную ориентацию"
+      },
+      {
+        "id": "removeAdaptiveSizeDevice",
+        "title": "Отключить адаптацию размера устройства"
+      },
+      {
+        "id": "sleepScreenMode",
+        "title": "Режим сна экрана"
+      },
+      {
+        "id": "setTapDelay",
+        "title": "Задать задержку касания"
+      }
+    ]
+  },
+  {
+    "id": "textFields",
+    "title": "Текстовые поля",
+    "color": "#669e48",
+    "blocks": [
+      {
+        "id": "ask",
+        "title": "Спросить и сохранить ответ"
+      },
+      {
+        "id": "createTextField",
+        "title": "Создать поле ввода текста"
+      },
+      {
+        "id": "deleteTextField",
+        "title": "Удалить поле ввода текста"
+      },
+      {
+        "id": "removeCameraTextField",
+        "title": "Отвязать от камеры поле ввода Имя поля"
+      },
+      {
+        "id": "insertCameraTextField",
+        "title": "Привязать к камере поле ввода Имя поля"
+      },
+      {
+        "id": "setPositionTextField",
+        "title": "Установить позицию полю ввода Имя поля X Y"
+      },
+      {
+        "id": "editPositionTextField",
+        "title": "Изменить позицию полю ввода Имя поля X Y"
+      },
+      {
+        "id": "setFontSizeTextField",
+        "title": "Задать размер шрифта полю ввода Имя поля размер"
+      },
+      {
+        "id": "setTypeInputTextField",
+        "title": "Установить тип полю ввода Имя поля"
+      },
+      {
+        "id": "setAlignTextField",
+        "title": "Установить выравнивание полю ввода Имя поля"
+      },
+      {
+        "id": "isSecureTextField",
+        "title": "Режим скрытия текста в поле ввода Имя поля"
+      },
+      {
+        "id": "placeholderTextField",
+        "title": "Установить подсказку в поле ввода Имя поля значение"
+      },
+      {
+        "id": "valueTextField",
+        "title": "Установить значение в поле ввода Имя поля значение"
+      },
+      {
+        "id": "setColorTextField",
+        "title": "Установить цвет тексту поля ввода Имя поля цвет"
+      },
+      {
+        "id": "setSelectionTextField",
+        "title": "Выделить текст в поле ввода Имя поля начальная позиция конечная позиция"
+      },
+      {
+        "id": "getSelectionTextField",
+        "title": "Получить выделенный текст поля ввода Имя поля"
+      },
+      {
+        "id": "setKeyboardToTextField",
+        "title": "Показать клавиатуру для текстового поля"
+      },
+      {
+        "id": "removeKeyboardToTextField",
+        "title": "Скрыть клавиатуру текстового поля"
+      }
+    ]
+  },
+  {
+    "id": "miniScenes",
+    "title": "Мини-сцены",
+    "color": "#f6c52d",
+    "blocks": [
+      {
+        "id": "createMiniScene",
+        "title": "Создать мини сцену Имя мини сцены"
+      },
+      {
+        "id": "deleteMiniScene",
+        "title": "Удалить мини сцену с именем Имя мини сцены"
+      },
+      {
+        "id": "miniSceneInsert",
+        "title": "Добавить в мини сцену актера или объект Имя мини сцены"
+      },
+      {
+        "id": "setPositionMiniScene",
+        "title": "Установить позицию мини сцене Имя мини сцены X Y"
+      },
+      {
+        "id": "setSizeMiniScene",
+        "title": "Установить размер мини сцене Имя мини сцены размер"
+      },
+      {
+        "id": "editSizeMiniScene",
+        "title": "Изменить размер мини сцене Имя мини сцены размер"
+      },
+      {
+        "id": "editPositionMiniScene",
+        "title": "Изменить позицию мини сцене Имя мини сцены На X и Y"
+      },
+      {
+        "id": "setRotationMiniScene",
+        "title": "Указать мини сцену в направлении Имя мини сцены направление"
+      },
+      {
+        "id": "editRotationMiniScene",
+        "title": "Изменить направление мини сцене Имя мини сцены направление"
+      },
+      {
+        "id": "setAlphaMiniScene",
+        "title": "Задать прозрачность мини сцене Имя мини сцены прозрачность"
+      },
+      {
+        "id": "editAlphaMiniScene",
+        "title": "Изменить прозрачность мини сцене Имя мини сцены прозрачность"
+      },
+      {
+        "id": "miniSceneHide",
+        "title": "Скрыть мини сцену Имя мини сцены"
+      },
+      {
+        "id": "miniSceneShow",
+        "title": "Показать мини сцену Имя мини сцены"
+      },
+      {
+        "id": "miniSceneInsertMiniScene",
+        "title": "Добавить в мини сцену другую мини сцену"
+      },
+      {
+        "id": "miniSceneInsertCamera",
+        "title": "Привязать к камере мини сцену Имя мини сцены"
+      },
+      {
+        "id": "miniSceneRemoveCamera",
+        "title": "Отвязать от камеры мини сцену Имя мини сцены"
+      },
+      {
+        "id": "insertVideoToMiniScene",
+        "title": "Добавить видео в мини-сцену"
+      }
+    ]
+  },
+  {
+    "id": "elementInterface",
+    "title": "Элементы интерфейса",
+    "color": "#be6297",
+    "blocks": [
+      {
+        "id": "createJoystick",
+        "title": "Создать экранный джойстик"
+      },
+      {
+        "id": "setPositionJoystick",
+        "title": "Переместить джойстик по X и Y"
+      },
+      {
+        "id": "setSizeJoystick",
+        "title": "Изменить размер джойстика"
+      },
+      {
+        "id": "setSizeJoystick1",
+        "title": "Изменить размер джойстика по X"
+      },
+      {
+        "id": "setSizeJoystick2",
+        "title": "Изменить размер джойстика по Y"
+      },
+      {
+        "id": "cameraInsertJoystick",
+        "title": "Показать джойстик в камере"
+      },
+      {
+        "id": "cameraRemoveJoystick",
+        "title": "Скрыть джойстик в камере"
+      },
+      {
+        "id": "newWebView",
+        "title": "Создать окно веб-страницы"
+      },
+      {
+        "id": "deleteWebView",
+        "title": "Удалить окно веб-страницы"
+      },
+      {
+        "id": "setWebViewX",
+        "title": "Задать X окну веб-страницы"
+      },
+      {
+        "id": "setWebViewY",
+        "title": "Задать Y окну веб-страницы"
+      },
+      {
+        "id": "insertWebInMiniScene",
+        "title": "Добавить окно сайта в мини сцену Имя окна Имя мини сцены"
+      },
+      {
+        "id": "setWebViewWidth",
+        "title": "Задать ширину окна веб-страницы"
+      },
+      {
+        "id": "setWebViewHeight",
+        "title": "Задать высоту окна веб-страницы"
+      },
+      {
+        "id": "setLinkWebView",
+        "title": "Открыть ссылку в окне веб-страницы"
+      },
+      {
+        "id": "backWebView",
+        "title": "Назад в окне веб-страницы"
+      },
+      {
+        "id": "forwardWebView",
+        "title": "Вперёд в окне веб-страницы"
+      },
+      {
+        "id": "stopWebView",
+        "title": "Остановить загрузку веб-страницы"
+      },
+      {
+        "id": "reloadWebView",
+        "title": "Перезагрузить веб-страницу"
+      }
+    ]
+  }
+]

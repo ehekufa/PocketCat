@@ -1,5 +1,6 @@
 use crate::scene::{Brick, Event, NoopServices, SceneDefinition, SceneManager, SceneTransition, Sprite};
 use slint::{ComponentHandle, ModelRc, SharedString, Timer, TimerMode, VecModel};
+use serde::Deserialize;
 use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Duration};
 slint::include_modules!();
 
@@ -25,14 +26,38 @@ impl AppState {
 }
 
 fn color(r: u8, g: u8, b: u8) -> slint::Color { slint::Color::from_rgb_u8(r, g, b) }
+#[derive(Deserialize)]
+struct CatalogCategory { id: String, title: String, color: String, blocks: Vec<CatalogBlock> }
+#[derive(Deserialize)]
+struct CatalogBlock { id: String, title: String }
+
+fn block_catalog() -> Vec<CatalogCategory> {
+    serde_json::from_str(include_str!("../ui/block-catalog.json"))
+        .expect("Pocket Up block catalog must be valid JSON")
+}
+
+#[cfg(test)]
+mod catalog_tests {
+    use super::block_catalog;
+
+    #[test]
+    fn contains_the_complete_upstream_palette() {
+        let catalog = block_catalog();
+        assert_eq!(catalog.len(), 14);
+        assert_eq!(catalog.iter().map(|category| category.blocks.len()).sum::<usize>(), 243);
+        assert!(catalog.iter().all(|category| !category.blocks.is_empty()));
+    }
+}
+
+fn parse_color(value: &str) -> slint::Color {
+    let rgb = u32::from_str_radix(value.trim_start_matches('#'), 16).unwrap_or(0x607d8b);
+    color(((rgb >> 16) & 0xff) as u8, ((rgb >> 8) & 0xff) as u8, (rgb & 0xff) as u8)
+}
+
 fn categories() -> Vec<CategoryItem> {
-    [
-        ("Добавлено в этом обновлении", (155,155,155)), ("Событие", (205,83,20)),
-        ("Управление", (248,144,83)), ("Физика", (58,137,195)), ("Звуки и Видео", (142,65,181)),
-        ("Образы", (102,158,72)), ("Частицы", (102,158,72)), ("Перо", (50,94,29)),
-        ("Данные", (232,68,73)), ("Устройство", (151,112,7)), ("Поля для ввода текста", (102,158,72)),
-        ("Мини сцены", (246,197,45)), ("Элементы интерфейса", (190,98,151)),
-    ].into_iter().map(|(title,(r,g,b))| CategoryItem { title: title.into(), color: color(r,g,b) }).collect()
+    block_catalog().into_iter().map(|category| CategoryItem {
+        title: category.title.into(), color: parse_color(&category.color),
+    }).collect()
 }
 
 fn refresh(ui: &MainWindow, state: &AppState) {
@@ -74,39 +99,32 @@ fn brick_info(brick: &Brick) -> (String, slint::Color) {
     }
 }
 
-fn blocks_for(category: &str, state: &AppState) -> Vec<BlockItem> {
-    let blue = color(58,137,195); let orange = color(205,83,20); let yellow = color(246,197,45);
-    match category {
-        "Событие" => vec![
-            ("event:start","При запуске сцены"),("event:resume","При возобновлении сцены"),
-            ("event:touch","При нажатии на объект"),("event:always","Всегда"),
-            ("event:key","Нажали клавишу и сохранить её имя"),("event:back","При нажатии кнопки назад"),
-        ].into_iter().map(|(id,title)|BlockItem{id:id.into(),title:title.into(),color:orange}).collect(),
-        "Физика" => vec![
-            ("set-x","Установить X в 100"),("set-y","Установить Y в 200"),
-            ("change-x","Изменить X на 10"),("change-y","Изменить Y на 10"),
-            ("gravity","Гравитация −9.8"),("bounce","Отскок"),
-        ].into_iter().map(|(id,title)|BlockItem{id:id.into(),title:title.into(),color:blue}).collect(),
-        "Мини сцены" => state.manager.scene_definitions().flat_map(|d|[
-            BlockItem{id:format!("start-scene:{}",d.id).into(),title:format!("Запустить сцену  {}",d.name).into(),color:yellow},
-            BlockItem{id:format!("resume-scene:{}",d.id).into(),title:format!("Продолжить сцену  {}",d.name).into(),color:yellow},
-        ]).collect(),
-        "Данные" => vec![BlockItem{id:"variable".into(),title:"Задать переменную Очки в 0".into(),color:color(232,68,73)}],
-        "Управление" => vec![BlockItem{id:"wait".into(),title:"Ждать 1 секунду".into(),color:color(248,144,83)},BlockItem{id:"repeat".into(),title:"Повторять всегда".into(),color:color(248,144,83)}],
-        "Звуки и Видео" => ["Воспроизвести звук","Воспроизвести звук и ждать","Остановить звук","Остановить все звуки","Задать громкость"].iter().map(|s|BlockItem{id:format!("sound:{s}").into(),title:(*s).into(),color:color(142,65,181)}).collect(),
-        "Образы" => ["Следующий образ","Переключить образ","Изменить размер","Показаться","Спрятаться"].iter().map(|s|BlockItem{id:format!("look:{s}").into(),title:(*s).into(),color:color(102,158,72)}).collect(),
-        _ => vec![BlockItem{id:"info".into(),title:"Кирпичики этой категории добавляются в проект".into(),color:color(95,125,132)}],
-    }
+fn blocks_for(category: &str) -> Vec<BlockItem> {
+    block_catalog().into_iter()
+        .find(|item| item.title == category)
+        .map(|item| {
+            let color = parse_color(&item.color);
+            item.blocks.into_iter().map(|block| BlockItem {
+                id: format!("catalog:{}:{}", item.id, block.id).into(),
+                title: block.title.into(), color,
+            }).collect()
+        })
+        .unwrap_or_default()
 }
 
 fn choose_category(ui: &MainWindow, state: &mut AppState, name: &str) {
     state.category = name.to_owned();
-    ui.set_blocks(ModelRc::new(VecModel::from(blocks_for(name,state))));
+    ui.set_blocks(ModelRc::new(VecModel::from(blocks_for(name))));
     ui.set_page("blocks".into());
     ui.set_header_title(name.into());
 }
 
 fn add_block(ui: &MainWindow, state: &mut AppState, id: &str) {
+    if id.starts_with("catalog:") {
+        ui.set_status("Блок из каталога Pocket Up: выполнение пока не подключено".into());
+        refresh(ui, state);
+        return;
+    }
     match id {
         "event:start" => { state.event=Event::Start; ui.set_page("editor".into()); }
         "event:resume" => { state.event=Event::Resume; ui.set_page("editor".into()); }
