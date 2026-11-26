@@ -20,6 +20,8 @@ rustup target add aarch64-linux-android
 cargo apk build --lib --target aarch64-linux-android
 ```
 
+APK: `target/android-artifacts/debug/apk/`.
+
 ## Scene Manager
 
 `src/scene.rs` содержит движковую модель сцен: `StartScene` пересоздаёт состояние из определения проекта, `ResumeScene` восстанавливает сцену из `cached_scenes`; реализованы события «При старте», «При возобновлении» и «Всегда», координаты спрайтов, локальные/глобальные переменные, гравитация, пауза фоновых сцен и `reset_scene_cache`. `SceneServices` — адаптер платформы, через который `OnDeactivate` глушит аудио, закрывает диалог/клавиатуру, отключает сенсоры/касания и приостанавливает кирпичики; реализация Android/iOS подключается в приложении.
