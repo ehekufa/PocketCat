@@ -8,10 +8,10 @@ export component CategoryRow inherits TouchArea {
         background: #0b4350; border-radius: 12px; border-width: 1px; border-color: #195a66;
         HorizontalLayout {
             padding-left: 14px; padding-right: 16px; spacing: 12px;
-            Rectangle { width: 8px; height: 34px; background: root.category.color; border-radius: 4px; vertical-alignment: center; }
-            Text { text: root.category.title; color: #e0eff1; font-size: 16px; vertical-alignment: center; }
+            Rectangle { width: 8px; height: 34px; background: root.category.color; border-radius: 4px; }
+            Text { text: root.category.title; color: #e0eff1; font-size: 16px; }
             Rectangle { horizontal-stretch: 1; }
-            Text { text: "›"; color: #73bec2; font-size: 24px; vertical-alignment: center; }
+            Text { text: "›"; color: #73bec2; font-size: 24px; }
         }
     }
     clicked => { root.activate(); }
