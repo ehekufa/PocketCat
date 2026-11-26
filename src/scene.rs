@@ -142,13 +142,15 @@ impl Scene {
 /// for a fresh StartScene; ResumeScene reuses the exact in-memory runtime instance.
 pub struct SceneManager {
     definitions: HashMap<SceneId, SceneDefinition>,
+    scene_order: Vec<SceneId>,
     pub cached_scenes: HashMap<SceneId, Scene>,
     pub current_scene: Option<Scene>,
 }
 
 impl SceneManager {
     pub fn new(definitions: Vec<SceneDefinition>) -> Self {
-        Self { definitions: definitions.into_iter().map(|d| (d.id.clone(), d)).collect(), cached_scenes: HashMap::new(), current_scene: None }
+        let scene_order = definitions.iter().map(|d| d.id.clone()).collect();
+        Self { definitions: definitions.into_iter().map(|d| (d.id.clone(), d)).collect(), scene_order, cached_scenes: HashMap::new(), current_scene: None }
     }
 
     pub fn transition(&mut self, id: &str, mode: SceneTransition, services: &mut impl SceneServices) -> Result<(), String> {
@@ -178,11 +180,12 @@ impl SceneManager {
     /// Remove a cached scene so the next entry reconstructs it from its definition.
     pub fn add_scene(&mut self, definition: SceneDefinition) -> Result<(), String> {
         if self.definitions.contains_key(&definition.id) { return Err(format!("Scene already exists: {}", definition.id)); }
+        self.scene_order.push(definition.id.clone());
         self.definitions.insert(definition.id.clone(), definition);
         Ok(())
     }
 
-    pub fn scene_definitions(&self) -> impl Iterator<Item = &SceneDefinition> { self.definitions.values() }
+    pub fn scene_definitions(&self) -> impl Iterator<Item = &SceneDefinition> { self.scene_order.iter().filter_map(|id| self.definitions.get(id)) }
 
     pub fn add_brick(&mut self, id: &str, event: Event, brick: Brick) -> Result<(), String> {
         let definition = self.definitions.get_mut(id).ok_or_else(|| format!("Unknown scene: {id}"))?;
@@ -196,7 +199,8 @@ impl SceneManager {
 
     /// Export portable project data containing scenes, sprites, event hooks and bricks.
     pub fn export_project_json(&self) -> Result<String, String> {
-        serde_json::to_string_pretty(&self.definitions.values().cloned().collect::<Vec<_>>()).map_err(|e| e.to_string())
+        let ordered: Vec<_> = self.scene_order.iter().filter_map(|id| self.definitions.get(id).cloned()).collect();
+        serde_json::to_string_pretty(&ordered).map_err(|e| e.to_string())
     }
 
     /// Validate and replace project data, unloading active/cached runtime instances first.
@@ -204,14 +208,17 @@ impl SceneManager {
         let definitions: Vec<SceneDefinition> = serde_json::from_str(json).map_err(|e| e.to_string())?;
         if definitions.is_empty() { return Err("Проект должен содержать хотя бы одну сцену".into()); }
         let mut next = HashMap::new();
+        let mut order = Vec::with_capacity(definitions.len());
         for definition in definitions {
             if definition.id.trim().is_empty() || next.contains_key(&definition.id) { return Err("Пустой или повторяющийся ID сцены".into()); }
+            order.push(definition.id.clone());
             next.insert(definition.id.clone(), definition);
         }
         if let Some(mut scene) = self.current_scene.take() { scene.unload(services); }
         for (_, mut scene) in self.cached_scenes.drain() { scene.unload(services); }
-        let first_id = next.keys().next().cloned().ok_or_else(|| "Пустой проект".to_string())?;
+        let first_id = order[0].clone();
         self.definitions = next;
+        self.scene_order = order;
         self.transition(&first_id, SceneTransition::StartScene, services)
     }
 
