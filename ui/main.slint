@@ -1,0 +1,154 @@
+import { Button, LineEdit, ScrollView } from "std-widgets.slint";
+
+export struct SceneItem { id: string, title: string }
+export struct CategoryItem { title: string, color: color }
+export struct BlockItem { id: string, title: string, color: color }
+
+export component MainWindow inherits Window {
+    title: "PocketCat";
+    width: 420px;
+    height: 850px;
+    min-width: 340px;
+    min-height: 560px;
+    background: #002b38;
+
+    in-out property <string> page: "projects";
+    in-out property <string> header-title: "Pocket Up";
+    in-out property <string> status: "Проект готов к редактированию";
+    in-out property <string> new-scene-name: "";
+    in-out property <string> project-scenes-title: "Мои проекты";
+    in-out property <[SceneItem]> scenes;
+    in-out property <[CategoryItem]> categories;
+    in-out property <[BlockItem]> blocks;
+    in-out property <[string]> sprites;
+    in-out property <[BlockItem]> scripts;
+    in-out property <bool> running: false;
+
+    callback back();
+    callback open-scene(string);
+    callback create-scene(string);
+    callback open-category(string);
+    callback add-block(string);
+    callback toggle-run();
+    callback save-project();
+    callback load-project();
+    callback reset-scene();
+
+    Rectangle {
+        background: #002b38;
+        VerticalLayout {
+            spacing: 0px;
+            Rectangle {
+                height: 60px;
+                background: #003440;
+                HorizontalLayout {
+                    padding-left: 12px; padding-right: 12px; spacing: 14px;
+                    if root.page != "projects": Button { text: "‹"; width: 38px; clicked => { root.back(); } }
+                    Text { text: root.header-title; color: #e0f1f5; font-size: 21px; vertical-alignment: center; overflow: elide; }
+                    Rectangle { horizontal-stretch: 1; }
+                    if root.page == "editor": Button { text: root.running ? "■" : "▶"; clicked => { root.toggle-run(); } }
+                    if root.page == "editor": Button { text: "⟲"; clicked => { root.reset-scene(); } }
+                    if root.page != "editor": Text { text: "⋮"; color: #e9f7fa; font-size: 25px; vertical-alignment: center; }
+                }
+            }
+            if root.page == "projects": ScrollView {
+                height: root.height - 94px;
+                viewport-width: self.width;
+                viewport-height: root.scenes.length * 114px + 230px;
+                VerticalLayout {
+                    padding: 10px; spacing: 4px;
+                    Text { text: root.project-scenes-title; color: #a7d5e5; font-size: 15px; height: 28px; }
+                    for scene in root.scenes: TouchArea {
+                        height: 110px;
+                        Rectangle {
+                            background: #00495b;
+                            HorizontalLayout {
+                                padding-left: 52px; padding-right: 12px; spacing: 12px;
+                                Rectangle { width: 92px; height: 84px; background: #54685f; border-width: 2px; border-color: #b0d9ea; vertical-alignment: center;
+                                    Text { text: "🐈"; font-size: 32px; horizontal-alignment: center; vertical-alignment: center; }
+                                }
+                                Text { text: scene.title; color: #b1d9ec; font-size: 21px; vertical-alignment: center; horizontal-stretch: 1; }
+                                Text { text: "⋮"; color: #b1d9ec; font-size: 24px; vertical-alignment: center; }
+                            }
+                        }
+                        clicked => { root.open-scene(scene.id); }
+                    }
+                    HorizontalLayout {
+                        LineEdit { text <=> root.new-scene-name; placeholder-text: "Имя новой сцены"; }
+                        Button { text: "+"; clicked => { root.create-scene(root.new-scene-name); } }
+                    }
+                    HorizontalLayout {
+                        Button { text: "▶ Играть"; clicked => { root.toggle-run(); } }
+                        Button { text: "＋ Новая сцена"; clicked => { root.create-scene(root.new-scene-name); } }
+                    }
+                    HorizontalLayout {
+                        Button { text: "⇩ Сохранить JSON"; clicked => { root.save-project(); } }
+                        Button { text: "⇧ Загрузить JSON"; clicked => { root.load-project(); } }
+                    }
+                }
+            }
+            if root.page == "editor": ScrollView {
+                height: root.height - 94px;
+                viewport-width: self.width;
+                viewport-height: root.scripts.length * 62px + 330px;
+                VerticalLayout {
+                    padding: 8px; spacing: 8px;
+                    Text { text: "СЦЕНА · ОБЪЕКТЫ"; color: #d5e9ef; font-size: 16px; }
+                    Rectangle {
+                        height: 220px; background: #f2f5f4; border-width: 1px; border-color: #8d9698;
+                        for sprite in root.sprites: Text { text: sprite == "Звезда" ? "★" : "🐈"; color: #82a63f; font-size: 42px; horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                    HorizontalLayout { spacing: 8px; for sprite in root.sprites: Text { text: "🐾 " + sprite; color: #b1d9ec; font-size: 14px; } }
+                    HorizontalLayout {
+                        Text { text: "Сценарии"; color: #e1edf1; font-size: 18px; vertical-alignment: center; }
+                        Rectangle { horizontal-stretch: 1; }
+                        Button { text: "＋ Блоки"; clicked => { root.page = "categories"; root.header-title = "Категории"; } }
+                    }
+                    for block in root.scripts: Rectangle {
+                        height: 56px; background: block.color; border-radius: 4px;
+                        Text { text: block.title; color: white; font-size: 16px; vertical-alignment: center; x: 48px; }
+                    }
+                }
+            }
+            if root.page == "categories": ScrollView {
+                height: root.height - 94px;
+                viewport-width: self.width;
+                viewport-height: root.categories.length * 75px;
+                VerticalLayout { spacing: 3px;
+                    for category in root.categories: TouchArea {
+                        height: 72px;
+                        Rectangle {
+                            background: category.color;
+                            Text { text: category.title; color: #f4efe8; font-size: 22px; x: 24px; vertical-alignment: center; }
+                        }
+                        clicked => { root.open-category(category.title); }
+                    }
+                }
+            }
+            if root.page == "blocks": ScrollView {
+                height: root.height - 94px;
+                viewport-width: self.width;
+                viewport-height: root.blocks.length * 78px + 20px;
+                VerticalLayout { padding: 6px; spacing: 4px;
+                    for block in root.blocks: TouchArea {
+                        height: 74px;
+                        Rectangle {
+                            background: block.color;
+                            border-width: 1px; border-color: #ffffff44;
+                            Text { text: block.title; color: white; font-size: 19px; x: 60px; vertical-alignment: center; }
+                        }
+                        clicked => { root.add-block(block.id); }
+                    }
+                }
+            }
+            Rectangle {
+                height: 34px; background: #002b38;
+                HorizontalLayout {
+                    padding-left: 10px; padding-right: 8px; spacing: 8px;
+                    Text { text: "●"; color: #7ddaad; vertical-alignment: center; }
+                    Text { text: root.status; color: #d1e4ea; font-size: 12px; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+                }
+            }
+        }
+    }
+}
