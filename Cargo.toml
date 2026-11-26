@@ -28,7 +28,6 @@ target_sdk_version = 35
 
 [profile.release]
 opt-level = "z"
-strip = true
-panic = "abort"
+strip = "symbols"
 
 [package.metadata.android.application]
