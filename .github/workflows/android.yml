@@ -1,0 +1,59 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/**'
+      - 'ui/**'
+      - 'build.rs'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/android.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install fontconfig development files
+        run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: aarch64-linux-android
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: ''
+      - name: Install Android SDK and NDK
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;26.1.10909125"
+      - name: Install cargo-apk
+        run: cargo install cargo-apk --locked
+      - name: Create temporary signing key
+        run: >-
+          keytool -genkeypair -v -keystore "$RUNNER_TEMP/pocketcat-release.jks"
+          -storepass android -keypass android -alias androiddebugkey -keyalg RSA
+          -keysize 2048 -validity 10000 -dname "CN=PocketCat Debug,O=PocketCat,C=RU"
+      - name: Build APK
+        shell: bash
+        env:
+          CARGO_APK_RELEASE_KEYSTORE: ${{ runner.temp }}/pocketcat-release.jks
+          CARGO_APK_RELEASE_KEYSTORE_PASSWORD: android
+        run: |
+          set +e
+          cargo apk build --release --lib --target aarch64-linux-android 2>&1 | tee /tmp/apk-build.log
+          result=${PIPESTATUS[0]}
+          { echo '### APK build output'; echo '```text'; tail -n 160 /tmp/apk-build.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$result" -ne 0 ]; then echo "::error title=APK build failed::$(tail -n 25 /tmp/apk-build.log | tr '\n' ' ')"; fi
+          exit "$result"
+      - name: Collect APK
+        run: |
+          APK="$(find target -type f -name '*.apk' -print -quit)"
+          test -n "$APK"
+          mkdir -p artifacts
+          cp "$APK" artifacts/PocketCat.apk
+          ls -lh artifacts/PocketCat.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pocketcat-debug-apk
+          path: artifacts/PocketCat.apk
+          if-no-files-found: error

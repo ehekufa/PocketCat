@@ -1,0 +1,38 @@
+name: Rust CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests and compile check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install fontconfig development files
+        run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - name: Run tests
+        shell: bash
+        run: |
+          set +e
+          cargo test 2>&1 | tee /tmp/cargo-test.log
+          result=${PIPESTATUS[0]}
+          { echo '### cargo test output'; echo '```text'; tail -n 180 /tmp/cargo-test.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$result" -ne 0 ]; then echo "::error title=Rust test compiler output::$(tail -n 60 /tmp/cargo-test.log | tr '\n' ' ')"; fi
+          exit "$result"
+      - name: Check application
+        shell: bash
+        run: |
+          set +e
+          cargo check 2>&1 | tee /tmp/cargo-check.log
+          result=${PIPESTATUS[0]}
+          { echo '### cargo check output'; echo '```text'; tail -n 180 /tmp/cargo-check.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit "$result"

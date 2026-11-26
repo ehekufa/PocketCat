@@ -1,0 +1,33 @@
+[package]
+name = "pocketcat"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+slint = { version = "1.13.1", default-features = false, features = ["std", "backend-default", "backend-android-activity-06", "renderer-software", "compat-1-2"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(target_os = "android")'.dependencies]
+android-activity = { version = "0.6", features = ["native-activity"] }
+
+[build-dependencies]
+slint-build = "1.13.1"
+
+[package.metadata.android]
+package = "dev.pocketcat.app"
+label = "PocketCat"
+
+[package.metadata.android.sdk]
+min_sdk_version = 23
+target_sdk_version = 35
+
+[profile.release]
+opt-level = "z"
+strip = "symbols"
+
+[package.metadata.android.application]
