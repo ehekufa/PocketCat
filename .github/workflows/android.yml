@@ -25,7 +25,18 @@ jobs:
         with:
           packages: ''
       - name: Install Android SDK and NDK
-        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;26.1.10909125"
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;30.0.16248370"
+      - name: Select NDK r30 for Slint's prebuilt Skia
+        shell: bash
+        run: |
+          NDK="$ANDROID_SDK_ROOT/ndk/30.0.16248370"
+          test -d "$NDK"
+          {
+            echo "ANDROID_NDK_HOME=$NDK"
+            echo "ANDROID_NDK_ROOT=$NDK"
+            echo "ANDROID_NDK_LATEST_HOME=$NDK"
+            echo "NDK_HOME=$NDK"
+          } >> "$GITHUB_ENV"
       - name: Install cargo-apk
         run: cargo install cargo-apk --locked
       - name: Create temporary signing key
