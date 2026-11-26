@@ -138,7 +138,7 @@ fn create_scene(ui: &MainWindow, state: &mut AppState, name: &str) {
 }
 
 fn connect_callbacks(ui: &MainWindow, state: Rc<RefCell<AppState>>, timer: Rc<Timer>) {
-    let weak=ui.as_weak(); let s=state.clone(); ui.on_back(move || {if let Some(ui)=weak.upgrade(){let page=ui.get_page();let mut state=s.borrow_mut();let next=if page=="blocks"{"categories"}else if page=="categories"{"editor"}else{"projects"};ui.set_page(next.into());refresh(&ui,&state);}});
+    let weak=ui.as_weak(); let s=state.clone(); ui.on_back(move || {if let Some(ui)=weak.upgrade(){let page=ui.get_page();let state=s.borrow();let next=if page=="blocks"{"categories"}else if page=="categories"{"editor"}else{"projects"};ui.set_page(next.into());refresh(&ui,&state);}});
     let weak=ui.as_weak();let s=state.clone();ui.on_open_scene(move|id|{if let Some(ui)=weak.upgrade(){let mut state=s.borrow_mut();let id=id.to_string();if state.manager.transition(&id,SceneTransition::ResumeScene,&mut NoopServices).is_ok(){state.selected=id;ui.set_page("editor".into());ui.set_status("Сцена продолжена из памяти".into());refresh(&ui,&state);}}});
     let weak=ui.as_weak();let s=state.clone();ui.on_create_scene(move|name|{if let Some(ui)=weak.upgrade(){create_scene(&ui,&mut s.borrow_mut(),name.as_str());}});
     let weak=ui.as_weak();let s=state.clone();ui.on_open_category(move|name|{if let Some(ui)=weak.upgrade(){choose_category(&ui,&mut s.borrow_mut(),name.as_str());}});
