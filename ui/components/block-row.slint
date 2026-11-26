@@ -9,8 +9,7 @@ export component BlockRow inherits TouchArea {
         HorizontalLayout {
             padding-left: 18px; padding-right: 14px; spacing: 14px;
             Rectangle { width: 8px; height: 32px; background: #ffffff75; border-radius: 4px; }
-            Text { text: root.block.title; color: #ffffff; font-size: 15px; width: root.width - 92px; overflow: elide; vertical-alignment: center; }
-            Rectangle { horizontal-stretch: 1; }
+            Text { text: root.block.title; color: #ffffff; font-size: 15px; horizontal-stretch: 1; overflow: elide; vertical-alignment: center; }
             Text { text: "+"; color: #ffffff; font-size: 24px; }
         }
     }
