@@ -377,6 +377,46 @@ impl SceneManager {
 
     pub fn scene_definitions(&self) -> impl Iterator<Item = &SceneDefinition> { self.scene_order.iter().filter_map(|id| self.definitions.get(id)) }
 
+    pub fn update_sprite(&mut self, scene_id: &str, sprite_id: &str, update: impl FnOnce(&mut Sprite)) -> Result<(), String> {
+        let definition = self.definitions.get_mut(scene_id).ok_or_else(|| format!("Unknown scene: {scene_id}"))?;
+        let sprite = definition.sprites.iter_mut().find(|sprite| sprite.id == sprite_id)
+            .ok_or_else(|| format!("Unknown object: {sprite_id}"))?;
+        update(sprite);
+        if let Some(active) = self.current_scene.as_mut().filter(|scene| scene.definition.id == scene_id) {
+            if let Some(runtime_sprite) = active.sprites.iter_mut().find(|sprite| sprite.id == sprite_id) {
+                *runtime_sprite = sprite.clone();
+            }
+            active.definition = definition.clone();
+        }
+        Ok(())
+    }
+
+    pub fn add_sprite(&mut self, scene_id: &str, sprite: Sprite) -> Result<(), String> {
+        let definition = self.definitions.get_mut(scene_id).ok_or_else(|| format!("Unknown scene: {scene_id}"))?;
+        if definition.sprites.iter().any(|existing| existing.id == sprite.id) {
+            return Err(format!("Object already exists: {}", sprite.id));
+        }
+        definition.sprites.push(sprite.clone());
+        if let Some(active) = self.current_scene.as_mut().filter(|scene| scene.definition.id == scene_id) {
+            active.sprites.push(sprite);
+            active.definition = definition.clone();
+        }
+        Ok(())
+    }
+
+    pub fn remove_sprite(&mut self, scene_id: &str, sprite_id: &str) -> Result<(), String> {
+        let definition = self.definitions.get_mut(scene_id).ok_or_else(|| format!("Unknown scene: {scene_id}"))?;
+        if definition.sprites.len() <= 1 { return Err("Сцене нужен хотя бы один объект".into()); }
+        let before = definition.sprites.len();
+        definition.sprites.retain(|sprite| sprite.id != sprite_id);
+        if before == definition.sprites.len() { return Err(format!("Unknown object: {sprite_id}")); }
+        if let Some(active) = self.current_scene.as_mut().filter(|scene| scene.definition.id == scene_id) {
+            active.sprites.retain(|sprite| sprite.id != sprite_id);
+            active.definition = definition.clone();
+        }
+        Ok(())
+    }
+
     pub fn add_brick(&mut self, id: &str, event: Event, brick: Brick) -> Result<(), String> {
         let definition = self.definitions.get_mut(id).ok_or_else(|| format!("Unknown scene: {id}"))?;
         if let Some(script) = definition.scripts.iter_mut().find(|s| s.event == event) { script.bricks.push(brick); }
@@ -487,6 +527,19 @@ mod tests {
         scene.apply(block("addElementArray", vec!["items".into(), "beta".into()]));
         scene.apply(block("replaceElementArray", vec!["items".into(), "1".into(), "first".into()]));
         assert_eq!(scene.arrays["items"], vec!["first", "beta"]);
+    }
+
+    #[test]
+    fn object_manager_updates_definition_and_live_scene() {
+        let mut m = manager(); let mut svc = NoopServices;
+        m.transition("game", SceneTransition::StartScene, &mut svc).unwrap();
+        let extra = Sprite { id: "star".into(), ..sprite() };
+        m.add_sprite("game", extra).unwrap();
+        assert_eq!(m.current_scene.as_ref().unwrap().sprites.len(), 2);
+        assert!(m.add_sprite("game", sprite()).is_err());
+        m.remove_sprite("game", "star").unwrap();
+        assert_eq!(m.current_scene.as_ref().unwrap().sprites.len(), 1);
+        assert!(m.remove_sprite("game", "cat").is_err());
     }
 
     #[test]

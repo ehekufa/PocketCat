@@ -18,6 +18,10 @@ export component MainWindow inherits Window {
     in-out property <string> header-title: "Pocket Up";
     in-out property <string> status: "Проект готов к редактированию";
     in-out property <string> new-scene-name: "";
+    in-out property <string> new-sprite-name: "";
+    in-out property <string> selected-sprite: "";
+    in-out property <string> variable-name: "";
+    in-out property <string> variable-value: "0";
     in-out property <string> block-arguments: "";
     in-out property <string> project-scenes-title: "Мои проекты";
     in-out property <[SceneItem]> scenes;
@@ -25,11 +29,17 @@ export component MainWindow inherits Window {
     in-out property <[BlockItem]> blocks;
     in-out property <[SpriteItem]> sprites;
     in-out property <[BlockItem]> scripts;
+    in-out property <[BlockItem]> workspace-items;
     in-out property <bool> running: false;
 
     callback back();
     callback open-scene(string);
     callback create-scene(string);
+    callback create-sprite(string);
+    callback delete-sprite(string);
+    callback select-sprite(string);
+    callback create-variable(string, string);
+    callback change-costume(int);
     callback open-category(string);
     callback add-block(string, string);
     callback toggle-run();
@@ -108,6 +118,7 @@ export component MainWindow inherits Window {
                         Text { text: "СЦЕНА"; color: #e4f4f5; font-size: 13px; font-weight: 700; vertical-alignment: center; }
                         Text { text: "ОБЪЕКТЫ  " + root.sprites.length; color: #7caeb6; font-size: 13px; vertical-alignment: center; }
                         Rectangle { horizontal-stretch: 1; }
+                        ActionButton { label: "Объекты"; button-width: 96px; button-height: 32px; activate => { root.page = "objects"; root.header-title = "Объекты сцены"; } }
                         Text { text: "16:9"; color: #79b9bd; font-size: 11px; vertical-alignment: center; }
                     }
                     StagePreview { sprites: root.sprites; }
@@ -140,6 +151,92 @@ export component MainWindow inherits Window {
                             Text { text: block.title; color: #fffaf4; font-size: 16px; font-weight: 600; vertical-alignment: center; }
                         }
                     }
+                    HorizontalLayout {
+                        spacing: 6px;
+                        ActionButton { label: "Объекты"; button-width: 112px; button-height: 34px; activate => { root.page = "objects"; root.header-title = "Объекты"; } }
+                        ActionButton { label: "Переменные"; button-width: 130px; button-height: 34px; activate => { root.page = "variables"; root.header-title = "Переменные"; } }
+                        ActionButton { label: "Образы"; button-width: 100px; button-height: 34px; activate => { root.page = "costumes"; root.header-title = "Образы"; } }
+                        ActionButton { label: "Звуки"; button-width: 92px; button-height: 34px; activate => { root.page = "sounds"; root.header-title = "Звуки"; } }
+                        ActionButton { label: "Формулы"; button-width: 110px; button-height: 34px; activate => { root.page = "formulas"; root.header-title = "Формулы"; } }
+                    }
+                }
+            }
+
+            if root.page == "objects": ScrollView {
+                height: root.height - 104px;
+                content-width: self.width;
+                content-height: root.sprites.length * 70px + 400px;
+                VerticalLayout {
+                    padding: 16px; spacing: 10px;
+                    Text { text: "ОБЪЕКТЫ СЦЕНЫ · " + root.sprites.length; color: #d8edef; font-size: 15px; font-weight: 700; }
+                    StagePreview { sprites: root.sprites; }
+                    for sprite in root.sprites: TouchArea {
+                        height: 54px;
+                        Rectangle { background: sprite.name == root.selected-sprite ? #126275 : #0b4350; border-radius: 10px; border-width: 1px; border-color: #ffffff20; }
+                        HorizontalLayout {
+                            padding-left: 14px; spacing: 10px;
+                            Rectangle { width: 8px; height: 26px; background: sprite.tint; border-radius: 4px; }
+                            Text { text: sprite.name; color: #e5f3f4; vertical-alignment: center; }
+                            Rectangle { horizontal-stretch: 1; }
+                            Text { text: "X " + sprite.x + "   Y " + sprite.y; color: #8bbbc1; vertical-alignment: center; }
+                        }
+                        clicked => { root.select-sprite(sprite.name); }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        LineEdit { text <=> root.new-sprite-name; placeholder-text: "Имя нового объекта"; }
+                        ActionButton { label: "＋"; button-width: 54px; activate => { root.create-sprite(root.new-sprite-name); } }
+                    }
+                    ActionButton { label: "Удалить выбранный объект"; fill: #a83e49; activate => { root.delete-sprite(root.selected-sprite); } }
+                }
+            }
+
+            if root.page == "costumes": ScrollView {
+                height: root.height - 104px;
+                content-width: self.width;
+                content-height: 430px;
+                VerticalLayout {
+                    padding: 16px; spacing: 12px;
+                    Text { text: "ОБРАЗЫ ОБЪЕКТА · " + root.selected-sprite; color: #d8edef; font-size: 15px; font-weight: 700; }
+                    StagePreview { sprites: root.sprites; }
+                    Text { text: "Выберите объект на сцене, затем переключайте его образы. Импорт рисунка и редактор рисования будут добавлены в этом рабочем пространстве."; color: #a4c6ca; wrap: word-wrap; }
+                    HorizontalLayout {
+                        spacing: 10px;
+                        ActionButton { label: "‹ Предыдущий образ"; activate => { root.change-costume(-1); } }
+                        ActionButton { label: "Следующий образ ›"; activate => { root.change-costume(1); } }
+                    }
+                    ActionButton { label: "Объекты сцены"; activate => { root.page = "objects"; root.header-title = "Объекты"; } }
+                }
+            }
+
+            if root.page == "sounds": ScrollView {
+                height: root.height - 104px;
+                content-width: self.width;
+                content-height: 320px;
+                VerticalLayout {
+                    padding: 16px; spacing: 12px;
+                    Text { text: "ЗВУКИ ОБЪЕКТА · " + root.selected-sprite; color: #d8edef; font-size: 15px; font-weight: 700; }
+                    Rectangle { height: 76px; background: #0b4350; border-radius: 12px;
+                        Text { text: "Звуковые дорожки появятся здесь"; color: #a4c6ca; horizontal-alignment: center; vertical-alignment: center; }
+                    }
+                    ActionButton { label: "▶ Прослушать"; activate => { root.status = "Звуковой проигрыватель ожидает импорт аудио"; } }
+                }
+            }
+
+            if root.page == "variables": ScrollView {
+                height: root.height - 104px;
+                content-width: self.width;
+                content-height: root.workspace-items.length * 70px + 200px;
+                VerticalLayout {
+                    padding: 16px; spacing: 10px;
+                    Text { text: "ПЕРЕМЕННЫЕ СЦЕНЫ"; color: #d8edef; font-size: 15px; font-weight: 700; }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        LineEdit { text <=> root.variable-name; placeholder-text: "Имя переменной"; }
+                        LineEdit { text <=> root.variable-value; placeholder-text: "Начальное значение"; }
+                        ActionButton { label: "＋"; button-width: 54px; activate => { root.create-variable(root.variable-name, root.variable-value); } }
+                    }
+                    for item in root.workspace-items: BlockRow { block: item; activate => {} }
                 }
             }
 

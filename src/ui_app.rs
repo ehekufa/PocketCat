@@ -7,6 +7,8 @@ slint::include_modules!();
 struct AppState {
     manager: SceneManager,
     selected: String,
+    selected_sprite: String,
+    new_sprite_name: String,
     event: Event,
     category: String,
 }
@@ -21,7 +23,7 @@ impl AppState {
         ];
         let mut manager = SceneManager::new(definitions);
         let _ = manager.transition("menu", SceneTransition::StartScene, &mut NoopServices);
-        Self { manager, selected: "menu".into(), event: Event::Start, category: String::new() }
+        Self { manager, selected: "menu".into(), selected_sprite: "Котик".into(), new_sprite_name: String::new(), event: Event::Start, category: String::new() }
     }
 }
 
@@ -71,6 +73,7 @@ fn refresh(ui: &MainWindow, state: &AppState) {
         _ => "Pocket Up".into(),
     };
     ui.set_header_title(title.into());
+    ui.set_selected_sprite(state.selected_sprite.clone().into());
     if let Some(scene) = state.manager.current_scene.as_ref() {
         ui.set_sprites(ModelRc::new(VecModel::from(scene.sprites.iter().map(|sprite| SpriteItem {
             name: sprite.id.clone().into(), x: sprite.x, y: sprite.y, size: sprite.size,
@@ -79,7 +82,7 @@ fn refresh(ui: &MainWindow, state: &AppState) {
                 (sprite.tint[0] as f32 * sprite.brightness / 100.0).clamp(0.0, 255.0) as u8,
                 (sprite.tint[1] as f32 * sprite.brightness / 100.0).clamp(0.0, 255.0) as u8,
                 (sprite.tint[2] as f32 * sprite.brightness / 100.0).clamp(0.0, 255.0) as u8,
-            ), visible: sprite.visible,
+            ), costume: sprite.costume as f32, visible: sprite.visible,
         }).collect::<Vec<_>>())));
         let mut scripts = Vec::new();
         for script in &scene.definition.scripts {
@@ -88,6 +91,11 @@ fn refresh(ui: &MainWindow, state: &AppState) {
             for brick in &script.bricks { let (text, c) = brick_info(brick); scripts.push(BlockItem { id: String::new().into(), title: text.into(), color: c }); }
         }
         ui.set_scripts(ModelRc::new(VecModel::from(scripts)));
+        let mut variables: Vec<_> = scene.global_variables.iter().map(|(name, value)| BlockItem {
+            id: format!("variable:{name}").into(), title: format!("{name} = {value}").into(), color: color(232,68,73),
+        }).collect();
+        variables.sort_by_key(|item| item.title.to_string());
+        ui.set_workspace_items(ModelRc::new(VecModel::from(variables)));
     }
 }
 
@@ -181,17 +189,75 @@ fn add_block(ui: &MainWindow, state: &mut AppState, id: &str, raw_arguments: &st
     refresh(ui,state);
 }
 
+fn create_sprite(ui: &MainWindow, state: &mut AppState, name: &str) {
+    let name = name.trim();
+    if name.is_empty() { ui.set_status("Введите имя объекта".into()); return; }
+    let sprite = Sprite { id: name.into(), x: 0.0, y: 0.0, velocity_x: 0.0, velocity_y: 0.0,
+        size: 100.0, rotation: 0.0, alpha: 100.0, brightness: 100.0, tint: [145, 201, 77],
+        costume: 0, visible: true, is_clone: false, local_variables: HashMap::new() };
+    match state.manager.add_sprite(&state.selected, sprite) {
+        Ok(()) => { state.selected_sprite = name.into(); ui.set_new_sprite_name("".into()); ui.set_status("Объект создан".into()); }
+        Err(error) => ui.set_status(error.into()),
+    }
+    refresh(ui, state);
+}
+
+fn create_variable(ui: &MainWindow, state: &mut AppState, name: &str, value: &str) {
+    let name = name.trim();
+    if name.is_empty() { ui.set_status("Введите имя переменной".into()); return; }
+    let Ok(value) = value.trim().parse::<f64>() else { ui.set_status("Начальное значение должно быть числом".into()); return; };
+    let brick = Brick::SetVariable { name: name.into(), value };
+    match state.manager.add_brick(&state.selected, Event::Start, brick) {
+        Ok(()) => {
+            if let Some(scene) = state.manager.current_scene.as_mut() { scene.global_variables.insert(name.into(), value); }
+            ui.set_variable_name("".into()); ui.set_variable_value("0".into());
+            ui.set_status(format!("Переменная {name} создана").into());
+        }
+        Err(error) => ui.set_status(error.into()),
+    }
+    refresh(ui, state);
+}
+
+fn change_costume(ui: &MainWindow, state: &mut AppState, delta: i32) {
+    let scene_id = state.selected.clone();
+    let sprite_id = state.selected_sprite.clone();
+    let result = state.manager.update_sprite(&scene_id, &sprite_id, |sprite| {
+        sprite.costume = if delta < 0 { sprite.costume.saturating_sub(delta.unsigned_abs() as usize) }
+            else { sprite.costume.saturating_add(delta as usize) };
+    });
+    ui.set_status(match result { Ok(()) => "Образ переключён".into(), Err(error) => error.into() });
+    refresh(ui, state);
+}
+
+fn delete_sprite(ui: &MainWindow, state: &mut AppState, name: &str) {
+    match state.manager.remove_sprite(&state.selected, name) {
+        Ok(()) => {
+            if let Some(scene) = state.manager.current_scene.as_ref() {
+                state.selected_sprite = scene.sprites.first().map(|sprite| sprite.id.clone()).unwrap_or_default();
+            }
+            ui.set_status("Объект удалён".into());
+        }
+        Err(error) => ui.set_status(error.into()),
+    }
+    refresh(ui, state);
+}
+
 fn create_scene(ui: &MainWindow, state: &mut AppState, name: &str) {
     let name=name.trim(); if name.is_empty(){return;}
     let id=format!("scene{}",state.manager.scene_definitions().count()+1);
     let definition=SceneDefinition{id:id.clone(),name:name.into(),sprites:vec![Sprite{id:"Котик".into(),x:0.0,y:0.0,velocity_x:0.0,velocity_y:0.0,size:100.0,rotation:0.0,alpha:100.0,brightness:100.0,tint:[145,201,77],costume:0,visible:true,is_clone:false,local_variables:HashMap::new()}],scripts:vec![crate::scene::Script{event:Event::Start,bricks:vec![]}]};
-    if state.manager.add_scene(definition).is_ok(){let _=state.manager.transition(&id,SceneTransition::StartScene,&mut NoopServices);state.selected=id;ui.set_new_scene_name("".into());ui.set_page("editor".into());ui.set_status("Новая сцена создана".into());refresh(ui,state);}
+    if state.manager.add_scene(definition).is_ok(){let _=state.manager.transition(&id,SceneTransition::StartScene,&mut NoopServices);state.selected=id;state.selected_sprite="Котик".into();ui.set_new_scene_name("".into());ui.set_page("editor".into());ui.set_status("Новая сцена создана".into());refresh(ui,state);}
 }
 
 fn connect_callbacks(ui: &MainWindow, state: Rc<RefCell<AppState>>, timer: Rc<Timer>) {
-    let weak=ui.as_weak(); let s=state.clone(); ui.on_back(move || {if let Some(ui)=weak.upgrade(){let page=ui.get_page();let state=s.borrow();let next=if page=="blocks"{"categories"}else if page=="categories"{"editor"}else{"projects"};ui.set_page(next.into());refresh(&ui,&state);}});
-    let weak=ui.as_weak();let s=state.clone();ui.on_open_scene(move|id|{if let Some(ui)=weak.upgrade(){let mut state=s.borrow_mut();let id=id.to_string();if state.manager.transition(&id,SceneTransition::ResumeScene,&mut NoopServices).is_ok(){state.selected=id;ui.set_page("editor".into());ui.set_status("Сцена продолжена из памяти".into());refresh(&ui,&state);}}});
+    let weak=ui.as_weak(); let s=state.clone(); ui.on_back(move || {if let Some(ui)=weak.upgrade(){let page=ui.get_page();let state=s.borrow();let next=if page=="blocks"{"categories"}else if page=="categories" || page=="objects"{"editor"}else{"projects"};ui.set_page(next.into());refresh(&ui,&state);}});
+    let weak=ui.as_weak();let s=state.clone();ui.on_open_scene(move|id|{if let Some(ui)=weak.upgrade(){let mut state=s.borrow_mut();let id=id.to_string();if state.manager.transition(&id,SceneTransition::ResumeScene,&mut NoopServices).is_ok(){state.selected=id;if let Some(scene)=state.manager.current_scene.as_ref(){state.selected_sprite=scene.sprites.first().map(|sprite|sprite.id.clone()).unwrap_or_default();}ui.set_page("editor".into());ui.set_status("Сцена продолжена из памяти".into());refresh(&ui,&state);}}});
     let weak=ui.as_weak();let s=state.clone();ui.on_create_scene(move|name|{if let Some(ui)=weak.upgrade(){create_scene(&ui,&mut s.borrow_mut(),name.as_str());}});
+    let weak=ui.as_weak();let s=state.clone();ui.on_create_sprite(move|name|{if let Some(ui)=weak.upgrade(){create_sprite(&ui,&mut s.borrow_mut(),name.as_str());}});
+    let weak=ui.as_weak();let s=state.clone();ui.on_delete_sprite(move|name|{if let Some(ui)=weak.upgrade(){delete_sprite(&ui,&mut s.borrow_mut(),name.as_str());}});
+    let weak=ui.as_weak();let s=state.clone();ui.on_select_sprite(move|name|{if let Some(ui)=weak.upgrade(){let mut state=s.borrow_mut();state.selected_sprite=name.to_string();refresh(&ui,&state);}});
+    let weak=ui.as_weak();let s=state.clone();ui.on_create_variable(move|name,value|{if let Some(ui)=weak.upgrade(){create_variable(&ui,&mut s.borrow_mut(),name.as_str(),value.as_str());}});
+    let weak=ui.as_weak();let s=state.clone();ui.on_change_costume(move|delta|{if let Some(ui)=weak.upgrade(){change_costume(&ui,&mut s.borrow_mut(),delta);}});
     let weak=ui.as_weak();let s=state.clone();ui.on_open_category(move|name|{if let Some(ui)=weak.upgrade(){choose_category(&ui,&mut s.borrow_mut(),name.as_str());}});
     let weak=ui.as_weak();let s=state.clone();ui.on_add_block(move|id,arguments|{if let Some(ui)=weak.upgrade(){add_block(&ui,&mut s.borrow_mut(),id.as_str(),arguments.as_str());}});
     let weak=ui.as_weak();let s=state.clone();let t=timer.clone();ui.on_toggle_run(move||{if let Some(ui)=weak.upgrade(){let run=!ui.get_running();ui.set_running(run);if run{ui.set_status("Игра выполняется".into());let state=s.clone();let weak_ui=ui.as_weak();t.start(TimerMode::Repeated,Duration::from_millis(16),move||{let mut state=state.borrow_mut();state.manager.tick(0.016,&mut NoopServices);if let Some(current)=state.manager.current_scene.as_ref(){state.selected=current.definition.id.clone();}if let Some(ui)=weak_ui.upgrade(){refresh(&ui,&state);}});}else{t.stop();ui.set_status("Игра остановлена".into());}}});
@@ -209,6 +275,7 @@ pub fn run() -> Result<(), slint::PlatformError> {
     ui.set_blocks(ModelRc::new(VecModel::from(Vec::<BlockItem>::new())));
     ui.set_sprites(ModelRc::new(VecModel::from(Vec::<SpriteItem>::new())));
     ui.set_scripts(ModelRc::new(VecModel::from(Vec::<BlockItem>::new())));
+    ui.set_workspace_items(ModelRc::new(VecModel::from(Vec::<BlockItem>::new())));
     refresh(&ui,&state.borrow());
     connect_callbacks(&ui,state,timer);
     ui.run()
