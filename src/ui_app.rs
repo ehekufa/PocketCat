@@ -1,5 +1,5 @@
 use crate::scene::{Brick, Event, NoopServices, SceneDefinition, SceneManager, SceneTransition, Sprite};
-use slint::{ComponentHandle, ModelRc, SharedString, Timer, TimerMode, VecModel};
+use slint::{ComponentHandle, ModelRc, Timer, TimerMode, VecModel};
 use serde::Deserialize;
 use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Duration};
 slint::include_modules!();
@@ -13,7 +13,7 @@ struct AppState {
 
 impl AppState {
     fn new() -> Self {
-        let sprite = |id: &str, x, y| Sprite { id: id.into(), x, y, velocity_x: 0.0, velocity_y: 0.0, size: 100.0, rotation: 0.0, costume: 0, visible: true, is_clone: false, local_variables: HashMap::new() };
+        let sprite = |id: &str, x, y| Sprite { id: id.into(), x, y, velocity_x: 0.0, velocity_y: 0.0, size: 100.0, rotation: 0.0, alpha: 100.0, brightness: 100.0, tint: [145, 201, 77], costume: 0, visible: true, is_clone: false, local_variables: HashMap::new() };
         let definitions = vec![
             SceneDefinition { id: "menu".into(), name: "Меню".into(), sprites: vec![sprite("Котик", 0.0, 0.0)], scripts: vec![crate::scene::Script { event: Event::Start, bricks: vec![Brick::Say("Нажми Играть!".into())] }] },
             SceneDefinition { id: "level1".into(), name: "Режимы".into(), sprites: vec![sprite("Котик", -60.0, 0.0), sprite("Звезда", 70.0, 30.0)], scripts: vec![crate::scene::Script { event: Event::Start, bricks: vec![Brick::SetVariable { name: "Очки".into(), value: 0.0 }] }] },
@@ -72,7 +72,15 @@ fn refresh(ui: &MainWindow, state: &AppState) {
     };
     ui.set_header_title(title.into());
     if let Some(scene) = state.manager.current_scene.as_ref() {
-        ui.set_sprites(ModelRc::new(VecModel::from(scene.sprites.iter().map(|s| SharedString::from(s.id.clone())).collect::<Vec<_>>())));
+        ui.set_sprites(ModelRc::new(VecModel::from(scene.sprites.iter().map(|sprite| SpriteItem {
+            name: sprite.id.clone().into(), x: sprite.x, y: sprite.y, size: sprite.size,
+            rotation: sprite.rotation, alpha: sprite.alpha,
+            tint: color(
+                (sprite.tint[0] as f32 * sprite.brightness / 100.0).clamp(0.0, 255.0) as u8,
+                (sprite.tint[1] as f32 * sprite.brightness / 100.0).clamp(0.0, 255.0) as u8,
+                (sprite.tint[2] as f32 * sprite.brightness / 100.0).clamp(0.0, 255.0) as u8,
+            ), visible: sprite.visible,
+        }).collect::<Vec<_>>())));
         let mut scripts = Vec::new();
         for script in &scene.definition.scripts {
             let title = match script.event { Event::Start=>"При запуске сцены", Event::Resume=>"При возобновлении сцены", Event::Touch=>"При нажатии на объект", Event::Always=>"Всегда" };
@@ -96,7 +104,10 @@ fn brick_info(brick: &Brick) -> (String, slint::Color) {
         Brick::Bounce => ("Отскок".into(),color(58,137,195)),
         Brick::Wait(v) => (format!("Ждать {v} секунд"),color(248,144,83)),
         Brick::Say(v) => (format!("Сказать {v}"),color(248,144,83)),
-        Brick::PocketUp { title, .. } => (title.clone(), color(95,125,132)),
+        Brick::PocketUp { title, arguments, .. } => {
+            let label = if arguments.is_empty() { title.clone() } else { format!("{} ({})", title, arguments.join(", ")) };
+            (label, color(95,125,132))
+        },
     }
 }
 
@@ -120,25 +131,27 @@ fn choose_category(ui: &MainWindow, state: &mut AppState, name: &str) {
     ui.set_header_title(name.into());
 }
 
-fn add_block(ui: &MainWindow, state: &mut AppState, id: &str) {
+fn add_block(ui: &MainWindow, state: &mut AppState, id: &str, raw_arguments: &str) {
     if let Some(rest) = id.strip_prefix("catalog:") {
         let Some((category_id, block_id)) = rest.split_once(':') else { return; };
         let catalog = block_catalog();
         let title = catalog.iter().find(|category| category.id == category_id)
             .and_then(|category| category.blocks.iter().find(|block| block.id == block_id))
             .map(|block| block.title.clone()).unwrap_or_else(|| block_id.to_owned());
+        let arguments: Vec<String> = raw_arguments.split(',').map(str::trim)
+            .filter(|value| !value.is_empty()).map(str::to_owned).collect();
         if category_id == "event" {
             match block_id {
                 "start" => state.event = Event::Start,
                 "touchObject" | "touchScreen" | "onTouchObject" | "onTouchScreen" => state.event = Event::Touch,
                 _ => {
                     let _ = state.manager.add_brick(&state.selected, state.event,
-                        Brick::PocketUp { id: block_id.into(), title });
+                        Brick::PocketUp { id: block_id.into(), title, arguments: arguments.clone() });
                 }
             }
         } else {
             let _ = state.manager.add_brick(&state.selected, state.event,
-                Brick::PocketUp { id: block_id.into(), title });
+                Brick::PocketUp { id: block_id.into(), title, arguments });
         }
         ui.set_page("editor".into());
         ui.set_status("Блок добавлен в сценарий".into());
@@ -171,7 +184,7 @@ fn add_block(ui: &MainWindow, state: &mut AppState, id: &str) {
 fn create_scene(ui: &MainWindow, state: &mut AppState, name: &str) {
     let name=name.trim(); if name.is_empty(){return;}
     let id=format!("scene{}",state.manager.scene_definitions().count()+1);
-    let definition=SceneDefinition{id:id.clone(),name:name.into(),sprites:vec![Sprite{id:"Котик".into(),x:0.0,y:0.0,velocity_x:0.0,velocity_y:0.0,size:100.0,rotation:0.0,costume:0,visible:true,is_clone:false,local_variables:HashMap::new()}],scripts:vec![crate::scene::Script{event:Event::Start,bricks:vec![]}]};
+    let definition=SceneDefinition{id:id.clone(),name:name.into(),sprites:vec![Sprite{id:"Котик".into(),x:0.0,y:0.0,velocity_x:0.0,velocity_y:0.0,size:100.0,rotation:0.0,alpha:100.0,brightness:100.0,tint:[145,201,77],costume:0,visible:true,is_clone:false,local_variables:HashMap::new()}],scripts:vec![crate::scene::Script{event:Event::Start,bricks:vec![]}]};
     if state.manager.add_scene(definition).is_ok(){let _=state.manager.transition(&id,SceneTransition::StartScene,&mut NoopServices);state.selected=id;ui.set_new_scene_name("".into());ui.set_page("editor".into());ui.set_status("Новая сцена создана".into());refresh(ui,state);}
 }
 
@@ -180,7 +193,7 @@ fn connect_callbacks(ui: &MainWindow, state: Rc<RefCell<AppState>>, timer: Rc<Ti
     let weak=ui.as_weak();let s=state.clone();ui.on_open_scene(move|id|{if let Some(ui)=weak.upgrade(){let mut state=s.borrow_mut();let id=id.to_string();if state.manager.transition(&id,SceneTransition::ResumeScene,&mut NoopServices).is_ok(){state.selected=id;ui.set_page("editor".into());ui.set_status("Сцена продолжена из памяти".into());refresh(&ui,&state);}}});
     let weak=ui.as_weak();let s=state.clone();ui.on_create_scene(move|name|{if let Some(ui)=weak.upgrade(){create_scene(&ui,&mut s.borrow_mut(),name.as_str());}});
     let weak=ui.as_weak();let s=state.clone();ui.on_open_category(move|name|{if let Some(ui)=weak.upgrade(){choose_category(&ui,&mut s.borrow_mut(),name.as_str());}});
-    let weak=ui.as_weak();let s=state.clone();ui.on_add_block(move|id|{if let Some(ui)=weak.upgrade(){add_block(&ui,&mut s.borrow_mut(),id.as_str());}});
+    let weak=ui.as_weak();let s=state.clone();ui.on_add_block(move|id,arguments|{if let Some(ui)=weak.upgrade(){add_block(&ui,&mut s.borrow_mut(),id.as_str(),arguments.as_str());}});
     let weak=ui.as_weak();let s=state.clone();let t=timer.clone();ui.on_toggle_run(move||{if let Some(ui)=weak.upgrade(){let run=!ui.get_running();ui.set_running(run);if run{ui.set_status("Игра выполняется".into());let state=s.clone();let weak_ui=ui.as_weak();t.start(TimerMode::Repeated,Duration::from_millis(16),move||{let mut state=state.borrow_mut();state.manager.tick(0.016,&mut NoopServices);if let Some(current)=state.manager.current_scene.as_ref(){state.selected=current.definition.id.clone();}if let Some(ui)=weak_ui.upgrade(){refresh(&ui,&state);}});}else{t.stop();ui.set_status("Игра остановлена".into());}}});
     let weak=ui.as_weak();let s=state.clone();ui.on_reset_scene(move||{if let Some(ui)=weak.upgrade(){let mut state=s.borrow_mut();let id=state.selected.clone();state.manager.reset_scene_cache(&id,&mut NoopServices);let _=state.manager.transition(&id,SceneTransition::StartScene,&mut NoopServices);ui.set_status("Сцена сброшена".into());refresh(&ui,&state);}});
     let weak=ui.as_weak();let s=state.clone();ui.on_save_project(move||{if let Some(ui)=weak.upgrade(){let state=s.borrow();let result=state.manager.export_project_json().and_then(|data|std::fs::write("PocketCat-project.json",data).map_err(|e|e.to_string()));ui.set_status(match result{Ok(())=>"Сохранено: PocketCat-project.json".into(),Err(e)=>format!("Ошибка сохранения: {e}").into()});}});
@@ -194,7 +207,7 @@ pub fn run() -> Result<(), slint::PlatformError> {
     ui.set_scenes(ModelRc::new(VecModel::from(Vec::<SceneItem>::new())));
     ui.set_categories(ModelRc::new(VecModel::from(categories())));
     ui.set_blocks(ModelRc::new(VecModel::from(Vec::<BlockItem>::new())));
-    ui.set_sprites(ModelRc::new(VecModel::from(Vec::<SharedString>::new())));
+    ui.set_sprites(ModelRc::new(VecModel::from(Vec::<SpriteItem>::new())));
     ui.set_scripts(ModelRc::new(VecModel::from(Vec::<BlockItem>::new())));
     refresh(&ui,&state.borrow());
     connect_callbacks(&ui,state,timer);

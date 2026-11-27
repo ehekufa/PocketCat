@@ -4,6 +4,18 @@ use std::collections::HashMap;
 pub type SceneId = String;
 
 fn default_sprite_size() -> f32 { 100.0 }
+fn default_sprite_alpha() -> f32 { 100.0 }
+fn default_sprite_tint() -> [u8; 3] { [145, 201, 77] }
+
+fn hue_to_rgb(hue: f32) -> [u8; 3] {
+    let h = hue.rem_euclid(360.0) / 60.0;
+    let x = 1.0 - (h.rem_euclid(2.0) - 1.0).abs();
+    let (r, g, b) = match h as u8 {
+        0 => (1.0, x, 0.0), 1 => (x, 1.0, 0.0), 2 => (0.0, 1.0, x),
+        3 => (0.0, x, 1.0), 4 => (x, 0.0, 1.0), _ => (1.0, 0.0, x),
+    };
+    [(r * 255.0) as u8, (g * 255.0) as u8, (b * 255.0) as u8]
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum SceneTransition { StartScene, ResumeScene }
@@ -21,6 +33,12 @@ pub struct Sprite {
     pub size: f32,
     #[serde(default)]
     pub rotation: f32,
+    #[serde(default = "default_sprite_alpha")]
+    pub alpha: f32,
+    #[serde(default = "default_sprite_alpha")]
+    pub brightness: f32,
+    #[serde(default = "default_sprite_tint")]
+    pub tint: [u8; 3],
     pub costume: usize,
     pub visible: bool,
     pub is_clone: bool,
@@ -42,7 +60,7 @@ pub enum Brick {
     Say(String),
     /// A Pocket Up palette command. The interpreter implements supported command families
     /// while preserving the original Pocket Up identifier in saved projects.
-    PocketUp { id: String, title: String },
+    PocketUp { id: String, title: String, #[serde(default)] arguments: Vec<String> },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -61,6 +79,54 @@ pub struct SceneDefinition {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SceneLifecycle { Loaded, Active, Cached, Unloaded }
+
+fn pocket_block_id(brick: &Brick) -> Option<&str> {
+    if let Brick::PocketUp { id, .. } = brick { Some(id) } else { None }
+}
+
+fn matching_end(program: &[Brick], start: usize, opening: &str, closing: &str) -> Option<usize> {
+    let mut nesting = 0usize;
+    for index in start + 1..program.len() {
+        match pocket_block_id(&program[index]) {
+            Some(id) if id == opening => nesting += 1,
+            Some(id) if id == closing => {
+                if nesting == 0 { return Some(index); }
+                nesting -= 1;
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+fn matching_if(program: &[Brick], start: usize) -> (Option<usize>, usize) {
+    let mut nesting = 0usize;
+    let mut otherwise = None;
+    for index in start + 1..program.len() {
+        match pocket_block_id(&program[index]) {
+            Some("if" | "if (2)" | "ifElse (2)") => nesting += 1,
+            Some("endIf") if nesting == 0 => return (otherwise, index),
+            Some("endIf") => nesting -= 1,
+            Some("else") if nesting == 0 && otherwise.is_none() => otherwise = Some(index),
+            _ => {}
+        }
+    }
+    (otherwise, program.len().saturating_sub(1))
+}
+
+fn evaluate_condition(arguments: &[String]) -> bool {
+    let left = arguments.first().and_then(|value| value.parse::<f64>().ok()).unwrap_or(1.0);
+    let operator = arguments.get(1).map(String::as_str).unwrap_or("<");
+    let right = arguments.get(2).and_then(|value| value.parse::<f64>().ok()).unwrap_or(2.0);
+    match operator {
+        "=" | "==" => (left - right).abs() < f64::EPSILON,
+        "!=" | "~=" => (left - right).abs() >= f64::EPSILON,
+        ">" => left > right,
+        ">=" => left >= right,
+        "<=" => left <= right,
+        _ => left < right,
+    }
+}
 
 /// Platform services which must be silenced when a scene is deactivated.
 pub trait SceneServices {
@@ -86,6 +152,7 @@ pub struct Scene {
     pub definition: SceneDefinition,
     pub sprites: Vec<Sprite>,
     pub global_variables: HashMap<String, f64>,
+    pub arrays: HashMap<String, Vec<String>>,
     pub lifecycle: SceneLifecycle,
     pub elapsed_seconds: f64,
     pub start_events: u64,
@@ -99,7 +166,7 @@ impl Scene {
     fn load(definition: SceneDefinition) -> Self {
         let scene = Self {
             sprites: definition.sprites.clone(), definition,
-            global_variables: HashMap::new(), lifecycle: SceneLifecycle::Loaded,
+            global_variables: HashMap::new(), arrays: HashMap::new(), lifecycle: SceneLifecycle::Loaded,
             elapsed_seconds: 0.0, start_events: 0,
             resume_events: 0, touch_enabled: false, gravity: -9.8, pending_transition: None,
         };
@@ -114,9 +181,59 @@ impl Scene {
     }
 
     fn run_event(&mut self, event: Event) {
-        let bricks: Vec<Brick> = self.definition.scripts.iter()
-            .filter(|s| s.event == event).flat_map(|s| s.bricks.clone()).collect();
-        for brick in bricks { self.apply(brick); }
+        let programs: Vec<Vec<Brick>> = self.definition.scripts.iter()
+            .filter(|script| script.event == event).map(|script| script.bricks.clone()).collect();
+        for program in programs { self.execute_program(&program, 0); }
+    }
+
+    fn execute_program(&mut self, program: &[Brick], depth: usize) {
+        if depth > 16 { return; }
+        let mut pc = 0;
+        let mut budget = 10_000usize;
+        while pc < program.len() && budget > 0 {
+            budget -= 1;
+            let Brick::PocketUp { id, arguments, .. } = &program[pc] else {
+                self.apply(program[pc].clone()); pc += 1; continue;
+            };
+            match id.as_str() {
+                "repeat" | "for" | "foreach" => {
+                    let closing = match id.as_str() { "for" => "endFor", "foreach" => "endForeach", _ => "endRepeat" };
+                    let end = matching_end(program, pc, id, closing);
+                    if let Some(end) = end {
+                        let count = arguments.first().and_then(|v| v.parse::<usize>().ok()).unwrap_or(10).min(1000);
+                        for _ in 0..count { self.execute_program(&program[pc + 1..end], depth + 1); }
+                        pc = end + 1;
+                    } else { self.apply(program[pc].clone()); pc += 1; }
+                }
+                "cycleForever" | "repeatIsTrue" => {
+                    let closing = if id == "cycleForever" { "endCycleForever" } else { "endRepeat" };
+                    if let Some(end) = matching_end(program, pc, id, closing) {
+                        let count = if id == "cycleForever" || evaluate_condition(arguments) { 64 } else { 0 };
+                        for _ in 0..count { self.execute_program(&program[pc + 1..end], depth + 1); }
+                        pc = end + 1;
+                    } else { self.apply(program[pc].clone()); pc += 1; }
+                }
+                "waitIfTrue" | "waitIfTrue2" => {
+                    let end = matching_end(program, pc, id, "endWait");
+                    if let Some(end) = end {
+                        if evaluate_condition(arguments) { self.execute_program(&program[pc + 1..end], depth + 1); }
+                        pc = end + 1;
+                    } else { self.apply(program[pc].clone()); pc += 1; }
+                }
+                "if" | "if (2)" | "ifElse (2)" => {
+                    let (otherwise, end) = matching_if(program, pc);
+                    if evaluate_condition(arguments) {
+                        let finish = otherwise.unwrap_or(end);
+                        self.execute_program(&program[pc + 1..finish], depth + 1);
+                    } else if let Some(otherwise) = otherwise {
+                        self.execute_program(&program[otherwise + 1..end], depth + 1);
+                    }
+                    pc = end.saturating_add(1);
+                }
+                "else" | "endIf" | "endRepeat" | "endCycleForever" | "endFor" | "endForeach" => pc += 1,
+                _ => { self.apply(program[pc].clone()); pc += 1; }
+            }
+        }
     }
 
     fn apply(&mut self, brick: Brick) {
@@ -129,40 +246,64 @@ impl Scene {
             Brick::ChangeX(dx) => { for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x += dx; } }
             Brick::ChangeY(dy) => { for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.y += dy; } }
             Brick::SetGravity(g) => self.gravity = g,
-            Brick::PocketUp { id, .. } => self.apply_pocket_up(&id),
+            Brick::PocketUp { id, arguments, .. } => self.apply_pocket_up(&id, &arguments),
             Brick::Bounce => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.velocity_y = s.velocity_y.abs(); },
             // Timing and speech UI are handled by the frame/UI layer.
             Brick::Wait(_) | Brick::Say(_) => {}
         }
     }
 
-    fn apply_pocket_up(&mut self, id: &str) {
+    fn apply_pocket_up(&mut self, id: &str, arguments: &[String]) {
+        let number = |index: usize, default: f32| arguments.get(index).and_then(|value| value.trim().parse::<f32>().ok()).unwrap_or(default);
+        let variable = arguments.first().filter(|name| !name.trim().is_empty()).map(|name| name.trim().to_owned()).unwrap_or_else(|| "Очки".into());
         const DEFAULT_X: f32 = 100.0;
         const DEFAULT_Y: f32 = 100.0;
         match id {
-            "setPosition" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x = DEFAULT_X; s.y = DEFAULT_Y; },
-            "setPositionX" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x = DEFAULT_X; },
-            "setPositionY" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.y = DEFAULT_Y; },
-            "editPositionX" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x += 10.0; },
-            "editPositionY" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.y += 10.0; },
-            "goSteps" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.y -= 10.0; },
-            "setGravityAllObjects" => self.gravity = -10.0,
-            "setGravityScale" => self.gravity = -10.0,
+            "setPosition" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x = number(0, DEFAULT_X); s.y = number(1, DEFAULT_Y); },
+            "setPositionX" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x = number(0, DEFAULT_X); },
+            "setPositionY" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.y = number(0, DEFAULT_Y); },
+            "editPositionX" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x += number(0, 10.0); },
+            "editPositionY" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.y += number(0, 10.0); },
+            "goSteps" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { let radians = s.rotation.to_radians(); let steps = number(0, 10.0); s.x += radians.sin() * steps; s.y -= radians.cos() * steps; },
+            "jump" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.velocity_x = number(0, 10.0); s.velocity_y = number(1, 20.0); },
+            "jumpX" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.velocity_x = number(0, 10.0); },
+            "jumpY" | "jumpYIf" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.velocity_y = number(0, 20.0); },
+            "speedStepsToSecoond" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.velocity_x = number(0, 0.0); s.velocity_y = number(1, -10.0); },
+            "setGravityAllObjects" | "setGravityScale" => self.gravity = number(0, -10.0),
             "setWeight" | "setElasticity" | "setFriction" | "setCircleHitbox" | "setQuareWHHitbox" | "setQuareHitbox" | "addBody" | "isSensor" => {},
-            "setSize" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.size = 60.0; },
-            "editSize" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.size += 10.0; },
-            "setRotate" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.rotation = 90.0; },
-            "editRotateLeft" | "rotateLeftForever" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.rotation -= 15.0; },
-            "editRotateRight" | "rotateRightForever" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.rotation += 15.0; },
+            "setSize" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.size = number(0, 60.0); },
+            "editSize" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.size = (s.size + number(0, 10.0)).max(0.0); },
+            "setAlpha" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.alpha = number(0, 50.0).clamp(0.0, 100.0); },
+            "editAlpha" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.alpha = (s.alpha + number(0, 25.0)).clamp(0.0, 100.0); },
+            "setBrightness" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.brightness = number(0, 50.0).clamp(0.0, 100.0); },
+            "editBrightness" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.brightness = (s.brightness + number(0, 25.0)).clamp(0.0, 100.0); },
+            "setColor" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.tint = hue_to_rgb(number(0, 120.0)); },
+            "editColor" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.tint = hue_to_rgb(number(0, 25.0)); },
+            "setRotate" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.rotation = number(0, 90.0); },
+            "editRotateLeft" | "rotateLeftForever" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.rotation -= number(0, 15.0); },
+            "editRotateRight" | "rotateRightForever" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.rotation += number(0, 15.0); },
             "setPositionXVideo" | "setPositionXParticle" => {},
             "nextImage" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.costume = s.costume.saturating_add(1); },
             "previousImage" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.costume = s.costume.saturating_sub(1); },
             "hide" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.visible = false; },
             "show" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.visible = true; },
-            "setVariable" => { self.global_variables.insert("Очки".into(), 0.0); }
-            "editVariable" => *self.global_variables.entry("Очки".into()).or_insert(0.0) += 1.0,
-            "deleteVariable" => { self.global_variables.remove("Очки"); }
-            "setVariableToRandom" => { self.global_variables.insert("Очки".into(), 1.0); }
+            "setVariable" | "fbSetValue" => { self.global_variables.insert(variable, number(1, 0.0) as f64); }
+            "editVariable" => *self.global_variables.entry(variable).or_insert(0.0) += number(1, 1.0) as f64,
+            "deleteVariable" | "fbDelValue" => { self.global_variables.remove(&variable); }
+            "setVariableToRandom" => { self.global_variables.insert(variable, number(1, 0.0) as f64); }
+            "addElementArray" => self.arrays.entry(variable).or_default().push(arguments.get(1).cloned().unwrap_or_default()),
+            "deleteElementArray" => { let index = number(1, 1.0).max(1.0) as usize - 1; if let Some(values) = self.arrays.get_mut(&variable) { if index < values.len() { values.remove(index); } } }
+            "deleteAllElementsArray" => { self.arrays.entry(variable).or_default().clear(); }
+            "pasteElementArray" => { let index = number(2, 1.0).max(1.0) as usize - 1; let value = arguments.get(1).cloned().unwrap_or_default(); let values = self.arrays.entry(variable).or_default(); values.insert(index.min(values.len()), value); }
+            "replaceElementArray" => { let index = number(1, 1.0).max(1.0) as usize - 1; let value = arguments.get(2).cloned().unwrap_or_default(); if let Some(slot) = self.arrays.entry(variable).or_default().get_mut(index) { *slot = value; } }
+            "deleteClone" => { if let Some(index) = self.sprites.iter().rposition(|sprite| sprite.is_clone) { self.sprites.remove(index); } }
+            "deleteAllClones" => self.sprites.retain(|sprite| !sprite.is_clone),
+            "clone" | "startClone" => {
+                let clone_offset = self.sprites.len();
+                let clones: Vec<Sprite> = self.sprites.iter().filter(|sprite| !sprite.is_clone).cloned().enumerate()
+                    .map(|(index, mut sprite)| { sprite.id = format!("{}-clone-{}", sprite.id, clone_offset + index); sprite.is_clone = true; sprite }).collect();
+                self.sprites.extend(clones);
+            }
             // Device, media, networking and editor-widget commands need platform services;
             // they remain serializable and are not silently mapped to unrelated behavior.
             _ => {}
@@ -181,6 +322,7 @@ impl Scene {
     fn unload(&mut self, services: &mut impl SceneServices) {
         self.sprites.clear(); // includes all runtime clones
         self.global_variables.clear();
+        self.arrays.clear();
         services.unload_scene_assets(&self.definition.id);
         self.lifecycle = SceneLifecycle::Unloaded;
     }
@@ -296,7 +438,7 @@ impl SceneManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    fn sprite() -> Sprite { Sprite { id: "cat".into(), x: 0.0, y: 0.0, velocity_x: 0.0, velocity_y: 0.0, size: 100.0, rotation: 0.0, costume: 0, visible: true, is_clone: false, local_variables: HashMap::new() } }
+    fn sprite() -> Sprite { Sprite { id: "cat".into(), x: 0.0, y: 0.0, velocity_x: 0.0, velocity_y: 0.0, size: 100.0, rotation: 0.0, alpha: 100.0, brightness: 100.0, tint: [145, 201, 77], costume: 0, visible: true, is_clone: false, local_variables: HashMap::new() } }
     fn manager() -> SceneManager {
         let scene = SceneDefinition { id: "game".into(), name: "Игра".into(), sprites: vec![sprite()], scripts: vec![Script { event: Event::Start, bricks: vec![Brick::SetVariable { name: "score".into(), value: 0.0 }] }, Script { event: Event::Resume, bricks: vec![Brick::ChangeX(1.0)] }] };
         SceneManager::new(vec![scene])
@@ -306,15 +448,45 @@ mod tests {
         let mut m = manager(); let mut svc = NoopServices;
         m.transition("game", SceneTransition::StartScene, &mut svc).unwrap();
         let scene = m.current_scene.as_mut().unwrap();
-        scene.apply(Brick::PocketUp { id: "setPosition".into(), title: "Set position".into() });
-        assert_eq!((scene.sprites[0].x, scene.sprites[0].y), (100.0, 100.0));
-        scene.apply(Brick::PocketUp { id: "hide".into(), title: "Hide".into() });
+        scene.apply(Brick::PocketUp { id: "setPosition".into(), title: "Set position".into(), arguments: vec!["12".into(), "34".into()] });
+        assert_eq!((scene.sprites[0].x, scene.sprites[0].y), (12.0, 34.0));
+        scene.apply(Brick::PocketUp { id: "hide".into(), title: "Hide".into(), arguments: vec![] });
         assert!(!scene.sprites[0].visible);
-        scene.apply(Brick::PocketUp { id: "show".into(), title: "Show".into() });
+        scene.apply(Brick::PocketUp { id: "show".into(), title: "Show".into(), arguments: vec![] });
         assert!(scene.sprites[0].visible);
-        scene.apply(Brick::PocketUp { id: "setVariable".into(), title: "Set variable".into() });
-        scene.apply(Brick::PocketUp { id: "editVariable".into(), title: "Change variable".into() });
-        assert_eq!(scene.global_variables["Очки"], 1.0);
+        scene.apply(Brick::PocketUp { id: "setVariable".into(), title: "Set variable".into(), arguments: vec!["score".into(), "5".into()] });
+        scene.apply(Brick::PocketUp { id: "editVariable".into(), title: "Change variable".into(), arguments: vec!["score".into(), "3".into()] });
+        assert_eq!(scene.global_variables["score"], 8.0);
+    }
+
+    #[test]
+    fn pocket_up_repeat_and_condition_blocks_run_nested_commands() {
+        let mut m = manager(); let mut svc = NoopServices;
+        m.transition("game", SceneTransition::StartScene, &mut svc).unwrap();
+        let scene = m.current_scene.as_mut().unwrap();
+        let block = |id: &str, arguments: Vec<String>| Brick::PocketUp { id: id.into(), title: id.into(), arguments };
+        scene.execute_program(&[
+            block("repeat", vec!["3".into()]),
+            block("editPositionX", vec!["2".into()]),
+            block("endRepeat", vec![]),
+            block("if", vec!["4".into(), ">".into(), "2".into()]),
+            block("editPositionY", vec!["5".into()]),
+            block("endIf", vec![]),
+        ], 0);
+        assert_eq!(scene.sprites[0].x, 6.0);
+        assert_eq!(scene.sprites[0].y, 5.0);
+    }
+
+    #[test]
+    fn pocket_up_array_blocks_mutate_lists() {
+        let mut m = manager(); let mut svc = NoopServices;
+        m.transition("game", SceneTransition::StartScene, &mut svc).unwrap();
+        let scene = m.current_scene.as_mut().unwrap();
+        let block = |id: &str, arguments: Vec<String>| Brick::PocketUp { id: id.into(), title: id.into(), arguments };
+        scene.apply(block("addElementArray", vec!["items".into(), "alpha".into()]));
+        scene.apply(block("addElementArray", vec!["items".into(), "beta".into()]));
+        scene.apply(block("replaceElementArray", vec!["items".into(), "1".into(), "first".into()]));
+        assert_eq!(scene.arrays["items"], vec!["first", "beta"]);
     }
 
     #[test]
@@ -331,10 +503,14 @@ mod tests {
     fn project_json_round_trip_preserves_bricks_and_sprites() {
         let mut m = manager(); let mut svc = NoopServices;
         m.transition("game", SceneTransition::StartScene, &mut svc).unwrap();
+        m.add_brick("game", Event::Start, Brick::PocketUp { id: "setPosition".into(), title: "Set position".into(), arguments: vec!["12".into(), "34".into()] }).unwrap();
         let exported = m.export_project_json().unwrap();
         let mut restored = SceneManager::new(vec![SceneDefinition { id: "placeholder".into(), name: "old".into(), sprites: vec![sprite()], scripts: vec![] }]);
         restored.import_project_json(&exported, &mut svc).unwrap();
-        assert!(restored.scene_definitions().any(|d| d.id == "game" && d.scripts[0].bricks == vec![Brick::SetVariable{name:"score".into(),value:0.0}]));
+        let restored_game = restored.scene_definitions().find(|definition| definition.id == "game").unwrap();
+        assert_eq!(restored_game.scripts[0].bricks[1], Brick::PocketUp {
+            id: "setPosition".into(), title: "Set position".into(), arguments: vec!["12".into(), "34".into()],
+        });
     }
 
     #[test]

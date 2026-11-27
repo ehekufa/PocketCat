@@ -1,12 +1,17 @@
+import { SpriteItem } from "../models.slint";
+
 export component StagePreview inherits Rectangle {
-    in property <[string]> sprites;
+    in property <[SpriteItem]> sprites;
     height: 226px;
     background: #edf3f1; border-radius: 8px; border-width: 1px; border-color: #5a7b7e;
     Rectangle { x: 0px; y: 112px; height: 1px; width: parent.width; background: #d9e4e0; }
     Rectangle { x: parent.width / 2; y: 0px; width: 1px; height: parent.height; background: #d9e4e0; }
     for sprite in root.sprites: Rectangle {
-        x: parent.width / 2 - 31px; y: parent.height / 2 - 31px; width: 62px; height: 62px;
-        background: #91c94d; border-radius: 31px;
-        Text { text: sprite == "Звезда" ? "★" : "🐈"; color: #fffef2; font-size: 25px; horizontal-alignment: center; vertical-alignment: center; }
+        visible: sprite.visible;
+        x: parent.width / 2 + sprite.x * parent.width / 480 - width / 2;
+        y: parent.height / 2 - sprite.y * parent.height / 270 - height / 2;
+        width: 62px * sprite.size / 100; height: 62px * sprite.size / 100;
+        background: sprite.tint; opacity: sprite.alpha / 100; border-radius: width / 2; rotation-angle: sprite.rotation * 1deg;
+        Text { text: sprite.name == "Звезда" ? "★" : "🐈"; color: #fffef2; font-size: 25px; horizontal-alignment: center; vertical-alignment: center; }
     }
 }

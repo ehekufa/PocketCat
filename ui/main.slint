@@ -1,5 +1,5 @@
 import { LineEdit, ScrollView } from "std-widgets.slint";
-import { SceneItem, CategoryItem, BlockItem } from "models.slint";
+import { SceneItem, SpriteItem, CategoryItem, BlockItem } from "models.slint";
 import { HeaderBar } from "components/header.slint";
 import { SceneCard } from "components/scene-card.slint";
 import { StagePreview } from "components/stage-preview.slint";
@@ -18,11 +18,12 @@ export component MainWindow inherits Window {
     in-out property <string> header-title: "Pocket Up";
     in-out property <string> status: "Проект готов к редактированию";
     in-out property <string> new-scene-name: "";
+    in-out property <string> block-arguments: "";
     in-out property <string> project-scenes-title: "Мои проекты";
     in-out property <[SceneItem]> scenes;
     in-out property <[CategoryItem]> categories;
     in-out property <[BlockItem]> blocks;
-    in-out property <[string]> sprites;
+    in-out property <[SpriteItem]> sprites;
     in-out property <[BlockItem]> scripts;
     in-out property <bool> running: false;
 
@@ -30,7 +31,7 @@ export component MainWindow inherits Window {
     callback open-scene(string);
     callback create-scene(string);
     callback open-category(string);
-    callback add-block(string);
+    callback add-block(string, string);
     callback toggle-run();
     callback save-project();
     callback load-project();
@@ -113,7 +114,7 @@ export component MainWindow inherits Window {
                     HorizontalLayout {
                         height: 38px; spacing: 8px;
                         Rectangle { width: 7px; height: 7px; background: #36c4ad; border-radius: 4px; }
-                        Text { text: root.sprites.length > 0 ? root.sprites[0] : "Объект не выбран"; color: #9acbd0; font-size: 13px; vertical-alignment: center; }
+                        Text { text: root.sprites.length > 0 ? root.sprites[0].name : "Объект не выбран"; color: #9acbd0; font-size: 13px; vertical-alignment: center; }
                         Rectangle { horizontal-stretch: 1; }
                         Text { text: "+  ДОБАВИТЬ ОБЪЕКТ"; color: #59c7b6; font-size: 10px; vertical-alignment: center; }
                     }
@@ -159,13 +160,14 @@ export component MainWindow inherits Window {
             if root.page == "blocks": ScrollView {
                 height: root.height - 104px;
                 content-width: self.width;
-                content-height: root.blocks.length * 78px + 35px;
+                content-height: root.blocks.length * 78px + 100px;
                 VerticalLayout {
                     padding: 14px; spacing: 8px;
                     Text { text: "НАЖМИТЕ, ЧТОБЫ ДОБАВИТЬ В СЦЕНАРИЙ"; color: #83bec4; font-size: 11px; letter-spacing: 0.5px; }
+                    LineEdit { text <=> root.block-arguments; placeholder-text: "Параметры через запятую, например: 120, 80"; }
                     for block in root.blocks: BlockRow {
                         block: block;
-                        activate => { root.add-block(block.id); }
+                        activate => { root.add-block(block.id, root.block-arguments); }
                     }
                 }
             }
