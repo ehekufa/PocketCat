@@ -167,7 +167,6 @@ impl Scene {
             // they remain serializable and are not silently mapped to unrelated behavior.
             _ => {}
         }
-        }
     }
 
     fn deactivate(&mut self, services: &mut impl SceneServices) {
