@@ -11,7 +11,7 @@ export component StagePreview inherits Rectangle {
         x: parent.width / 2 + sprite.x * parent.width / 480 - width / 2;
         y: parent.height / 2 - sprite.y * parent.height / 270 - height / 2;
         width: 62px * sprite.size / 100; height: 62px * sprite.size / 100;
-        background: sprite.tint; opacity: sprite.alpha / 100; border-radius: width / 2; rotation-angle: sprite.rotation * 1deg;
+        background: sprite.tint; opacity: sprite.alpha / 100; border-radius: width / 2;
         Text { text: sprite.name == "Звезда" ? "★" : "🐈"; color: #fffef2; font-size: 25px; horizontal-alignment: center; vertical-alignment: center; }
     }
 }
