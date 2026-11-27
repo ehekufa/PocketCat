@@ -8,10 +8,10 @@ export component StagePreview inherits Rectangle {
     Rectangle { x: parent.width / 2; y: 0px; width: 1px; height: parent.height; background: #d9e4e0; }
     for sprite in root.sprites: Rectangle {
         visible: sprite.visible;
-        x: parent.width / 2 + sprite.x * parent.width / 480 - width / 2;
-        y: parent.height / 2 - sprite.y * parent.height / 270 - height / 2;
+        x: parent.width / 2 + sprite.x * parent.width / 480 - 31px * sprite.size / 100;
+        y: parent.height / 2 - sprite.y * parent.height / 270 - 31px * sprite.size / 100;
         width: 62px * sprite.size / 100; height: 62px * sprite.size / 100;
-        background: sprite.tint; opacity: sprite.alpha / 100; border-radius: width / 2;
+        background: sprite.tint; opacity: sprite.alpha / 100; border-radius: 31px * sprite.size / 100;
         Text { text: sprite.name == "Звезда" ? "★" : "🐈"; color: #fffef2; font-size: 25px; horizontal-alignment: center; vertical-alignment: center; }
     }
 }
