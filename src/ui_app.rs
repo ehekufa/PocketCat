@@ -8,7 +8,6 @@ struct AppState {
     manager: SceneManager,
     selected: String,
     selected_sprite: String,
-    new_sprite_name: String,
     event: Event,
     category: String,
 }
@@ -23,7 +22,7 @@ impl AppState {
         ];
         let mut manager = SceneManager::new(definitions);
         let _ = manager.transition("menu", SceneTransition::StartScene, &mut NoopServices);
-        Self { manager, selected: "menu".into(), selected_sprite: "Котик".into(), new_sprite_name: String::new(), event: Event::Start, category: String::new() }
+        Self { manager, selected: "menu".into(), selected_sprite: "Котик".into(), event: Event::Start, category: String::new() }
     }
 }
 
