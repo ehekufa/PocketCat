@@ -13,7 +13,7 @@ struct AppState {
 
 impl AppState {
     fn new() -> Self {
-        let sprite = |id: &str, x, y| Sprite { id: id.into(), x, y, costume: 0, visible: true, is_clone: false, local_variables: HashMap::new() };
+        let sprite = |id: &str, x, y| Sprite { id: id.into(), x, y, velocity_x: 0.0, velocity_y: 0.0, size: 100.0, rotation: 0.0, costume: 0, visible: true, is_clone: false, local_variables: HashMap::new() };
         let definitions = vec![
             SceneDefinition { id: "menu".into(), name: "Меню".into(), sprites: vec![sprite("Котик", 0.0, 0.0)], scripts: vec![crate::scene::Script { event: Event::Start, bricks: vec![Brick::Say("Нажми Играть!".into())] }] },
             SceneDefinition { id: "level1".into(), name: "Режимы".into(), sprites: vec![sprite("Котик", -60.0, 0.0), sprite("Звезда", 70.0, 30.0)], scripts: vec![crate::scene::Script { event: Event::Start, bricks: vec![Brick::SetVariable { name: "Очки".into(), value: 0.0 }] }] },
@@ -96,6 +96,7 @@ fn brick_info(brick: &Brick) -> (String, slint::Color) {
         Brick::Bounce => ("Отскок".into(),color(58,137,195)),
         Brick::Wait(v) => (format!("Ждать {v} секунд"),color(248,144,83)),
         Brick::Say(v) => (format!("Сказать {v}"),color(248,144,83)),
+        Brick::PocketUp { title, .. } => (title.clone(), color(95,125,132)),
     }
 }
 
@@ -120,8 +121,27 @@ fn choose_category(ui: &MainWindow, state: &mut AppState, name: &str) {
 }
 
 fn add_block(ui: &MainWindow, state: &mut AppState, id: &str) {
-    if id.starts_with("catalog:") {
-        ui.set_status("Блок из каталога Pocket Up: выполнение пока не подключено".into());
+    if let Some(rest) = id.strip_prefix("catalog:") {
+        let Some((category_id, block_id)) = rest.split_once(':') else { return; };
+        let catalog = block_catalog();
+        let title = catalog.iter().find(|category| category.id == category_id)
+            .and_then(|category| category.blocks.iter().find(|block| block.id == block_id))
+            .map(|block| block.title.clone()).unwrap_or_else(|| block_id.to_owned());
+        if category_id == "event" {
+            match block_id {
+                "start" => state.event = Event::Start,
+                "touchObject" | "touchScreen" | "onTouchObject" | "onTouchScreen" => state.event = Event::Touch,
+                _ => {
+                    let _ = state.manager.add_brick(&state.selected, state.event,
+                        Brick::PocketUp { id: block_id.into(), title });
+                }
+            }
+        } else {
+            let _ = state.manager.add_brick(&state.selected, state.event,
+                Brick::PocketUp { id: block_id.into(), title });
+        }
+        ui.set_page("editor".into());
+        ui.set_status("Блок добавлен в сценарий".into());
         refresh(ui, state);
         return;
     }
@@ -151,7 +171,7 @@ fn add_block(ui: &MainWindow, state: &mut AppState, id: &str) {
 fn create_scene(ui: &MainWindow, state: &mut AppState, name: &str) {
     let name=name.trim(); if name.is_empty(){return;}
     let id=format!("scene{}",state.manager.scene_definitions().count()+1);
-    let definition=SceneDefinition{id:id.clone(),name:name.into(),sprites:vec![Sprite{id:"Котик".into(),x:0.0,y:0.0,costume:0,visible:true,is_clone:false,local_variables:HashMap::new()}],scripts:vec![crate::scene::Script{event:Event::Start,bricks:vec![]}]};
+    let definition=SceneDefinition{id:id.clone(),name:name.into(),sprites:vec![Sprite{id:"Котик".into(),x:0.0,y:0.0,velocity_x:0.0,velocity_y:0.0,size:100.0,rotation:0.0,costume:0,visible:true,is_clone:false,local_variables:HashMap::new()}],scripts:vec![crate::scene::Script{event:Event::Start,bricks:vec![]}]};
     if state.manager.add_scene(definition).is_ok(){let _=state.manager.transition(&id,SceneTransition::StartScene,&mut NoopServices);state.selected=id;ui.set_new_scene_name("".into());ui.set_page("editor".into());ui.set_status("Новая сцена создана".into());refresh(ui,state);}
 }
 

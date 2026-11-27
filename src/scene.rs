@@ -3,6 +3,8 @@ use std::collections::HashMap;
 
 pub type SceneId = String;
 
+fn default_sprite_size() -> f32 { 100.0 }
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum SceneTransition { StartScene, ResumeScene }
 
@@ -11,6 +13,14 @@ pub struct Sprite {
     pub id: String,
     pub x: f32,
     pub y: f32,
+    #[serde(default)]
+    pub velocity_x: f32,
+    #[serde(default)]
+    pub velocity_y: f32,
+    #[serde(default = "default_sprite_size")]
+    pub size: f32,
+    #[serde(default)]
+    pub rotation: f32,
     pub costume: usize,
     pub visible: bool,
     pub is_clone: bool,
@@ -30,6 +40,9 @@ pub enum Brick {
     Bounce,
     Wait(f32),
     Say(String),
+    /// A Pocket Up palette command. The interpreter implements supported command families
+    /// while preserving the original Pocket Up identifier in saved projects.
+    PocketUp { id: String, title: String },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -116,8 +129,44 @@ impl Scene {
             Brick::ChangeX(dx) => { for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x += dx; } }
             Brick::ChangeY(dy) => { for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.y += dy; } }
             Brick::SetGravity(g) => self.gravity = g,
-            // Detailed physics integration belongs to the frame tick.
-            Brick::Bounce | Brick::Wait(_) | Brick::Say(_) => {}
+            Brick::PocketUp { id, .. } => self.apply_pocket_up(&id),
+            Brick::Bounce => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.velocity_y = s.velocity_y.abs(); },
+            // Timing and speech UI are handled by the frame/UI layer.
+            Brick::Wait(_) | Brick::Say(_) => {}
+        }
+    }
+
+    fn apply_pocket_up(&mut self, id: &str) {
+        const DEFAULT_X: f32 = 100.0;
+        const DEFAULT_Y: f32 = 100.0;
+        match id {
+            "setPosition" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x = DEFAULT_X; s.y = DEFAULT_Y; },
+            "setPositionX" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x = DEFAULT_X; },
+            "setPositionY" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.y = DEFAULT_Y; },
+            "editPositionX" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.x += 10.0; },
+            "editPositionY" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.y += 10.0; },
+            "goSteps" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.y -= 10.0; },
+            "setGravityAllObjects" => self.gravity = -10.0,
+            "setGravityScale" => self.gravity = -10.0,
+            "setWeight" | "setElasticity" | "setFriction" | "setCircleHitbox" | "setQuareWHHitbox" | "setQuareHitbox" | "addBody" | "isSensor" => {},
+            "setSize" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.size = 60.0; },
+            "editSize" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.size += 10.0; },
+            "setRotate" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.rotation = 90.0; },
+            "editRotateLeft" | "rotateLeftForever" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.rotation -= 15.0; },
+            "editRotateRight" | "rotateRightForever" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.rotation += 15.0; },
+            "setPositionXVideo" | "setPositionXParticle" => {},
+            "nextImage" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.costume = s.costume.saturating_add(1); },
+            "previousImage" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.costume = s.costume.saturating_sub(1); },
+            "hide" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.visible = false; },
+            "show" => for s in self.sprites.iter_mut().filter(|s| !s.is_clone) { s.visible = true; },
+            "setVariable" => { self.global_variables.insert("Очки".into(), 0.0); }
+            "editVariable" => *self.global_variables.entry("Очки".into()).or_insert(0.0) += 1.0,
+            "deleteVariable" => { self.global_variables.remove("Очки"); }
+            "setVariableToRandom" => { self.global_variables.insert("Очки".into(), 1.0); }
+            // Device, media, networking and editor-widget commands need platform services;
+            // they remain serializable and are not silently mapped to unrelated behavior.
+            _ => {}
+        }
         }
     }
 
@@ -231,8 +280,13 @@ impl SceneManager {
         if scene.lifecycle != SceneLifecycle::Active { return; }
         scene.elapsed_seconds += dt.max(0.0);
         // Gravity is integrated only for active scenes; cached scenes are frozen.
+        let step = dt.clamp(0.0, 0.1) as f32;
         for sprite in scene.sprites.iter_mut().filter(|s| !s.is_clone && s.visible) {
-            sprite.y += scene.gravity * dt as f32 * dt as f32 * 0.5;
+            sprite.velocity_y += scene.gravity * step;
+            sprite.x += sprite.velocity_x * step;
+            sprite.y += sprite.velocity_y * step;
+            if sprite.x.abs() > 240.0 { sprite.x = sprite.x.clamp(-240.0, 240.0); sprite.velocity_x = -sprite.velocity_x; }
+            if sprite.y.abs() > 135.0 { sprite.y = sprite.y.clamp(-135.0, 135.0); sprite.velocity_y = -sprite.velocity_y; }
         }
         scene.run_event(Event::Always);
         let pending = scene.pending_transition.take();
@@ -243,11 +297,27 @@ impl SceneManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    fn sprite() -> Sprite { Sprite { id: "cat".into(), x: 0.0, y: 0.0, costume: 0, visible: true, is_clone: false, local_variables: HashMap::new() } }
+    fn sprite() -> Sprite { Sprite { id: "cat".into(), x: 0.0, y: 0.0, velocity_x: 0.0, velocity_y: 0.0, size: 100.0, rotation: 0.0, costume: 0, visible: true, is_clone: false, local_variables: HashMap::new() } }
     fn manager() -> SceneManager {
         let scene = SceneDefinition { id: "game".into(), name: "Игра".into(), sprites: vec![sprite()], scripts: vec![Script { event: Event::Start, bricks: vec![Brick::SetVariable { name: "score".into(), value: 0.0 }] }, Script { event: Event::Resume, bricks: vec![Brick::ChangeX(1.0)] }] };
         SceneManager::new(vec![scene])
     }
+    #[test]
+    fn pocket_up_motion_appearance_and_data_blocks_execute() {
+        let mut m = manager(); let mut svc = NoopServices;
+        m.transition("game", SceneTransition::StartScene, &mut svc).unwrap();
+        let scene = m.current_scene.as_mut().unwrap();
+        scene.apply(Brick::PocketUp { id: "setPosition".into(), title: "Set position".into() });
+        assert_eq!((scene.sprites[0].x, scene.sprites[0].y), (100.0, 100.0));
+        scene.apply(Brick::PocketUp { id: "hide".into(), title: "Hide".into() });
+        assert!(!scene.sprites[0].visible);
+        scene.apply(Brick::PocketUp { id: "show".into(), title: "Show".into() });
+        assert!(scene.sprites[0].visible);
+        scene.apply(Brick::PocketUp { id: "setVariable".into(), title: "Set variable".into() });
+        scene.apply(Brick::PocketUp { id: "editVariable".into(), title: "Change variable".into() });
+        assert_eq!(scene.global_variables["Очки"], 1.0);
+    }
+
     #[test]
     fn resume_preserves_state_and_fires_resume_not_start() {
         let mut m = manager(); let mut svc = NoopServices;
